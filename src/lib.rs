@@ -11,12 +11,9 @@
 #![deny(unused_must_use)]
 #![forbid(unsafe_code)]
 
-
 extern crate bitcoin;
 #[macro_use]
 extern crate log;
 
 /// Tapyrus SPV Implementation
-pub mod tapyrus_spv {
-
-}
+pub mod tapyrus_spv {}
