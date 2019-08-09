@@ -11,6 +11,11 @@ use tokio::{
         TcpStream,
         tcp::ConnectFuture
     },
+    codec::{
+        Decoder,
+        Encoder,
+        Framed,
+    },
     io::{
         Write,
         WriteHalf,
@@ -28,7 +33,10 @@ use bitcoin::{
     consensus::Encodable,
 };
 use std::mem::transmute_copy;
-use tokio::prelude::future::result;
+use crate::network::codec::NetworkMessagesCodec;
+
+mod bytes;
+mod codec;
 
 
 /// Interval for pinging peers
@@ -51,12 +59,15 @@ struct HandleConnectFuture {
 
 impl Future for HandleConnectFuture
 {
-    type Item = (ReadHalf<TcpStream>, WriteHalf<TcpStream>);
-    type Error = io::Error;
+    type Item = Framed<TcpStream, NetworkMessagesCodec>;
+    type Error = codec::Error;
 
-    fn poll(&mut self) -> Result<Async<Self::Item>, io::Error> {
+    fn poll(&mut self) -> Result<Async<Self::Item>, codec::Error> {
         match self.inner.poll()? {
-            Async::Ready(stream) => Ok(Async::Ready(stream.split())),
+            Async::Ready(stream) => {
+                let framed_sock = Framed::new(stream, NetworkMessagesCodec::new());
+                Ok(Async::Ready(framed_sock))
+            },
             Async::NotReady => Ok(Async::NotReady),
         }
     }
@@ -68,43 +79,12 @@ fn handle_connect(future: ConnectFuture) -> HandleConnectFuture {
     }
 }
 
-fn connect2(address: &str) -> HandleConnectFuture {
+fn connect(address: &str) -> HandleConnectFuture {
     let socketaddr = address.parse().unwrap();
     let connect = TcpStream::connect(&socketaddr);
     handle_connect(connect)
 }
 
-fn connect<'a>(address: &'a str) -> impl Future<Item = Peer, Error = std::io::Error> + 'a {
-    trace!("Local: connect");
-    let socketaddr = address.parse().unwrap();
-    TcpStream::connect(&socketaddr)
-        .and_then(move |stream| {
-            let (mut reader, writer) = stream.split();
-
-            trace!("Local: connected");
-            let future = tokio::prelude::future::lazy(move || -> tokio::prelude::future::FutureResult<(), ()> {
-                loop {
-                    trace!("Local: reader loop");
-                    match StreamReader::new(&mut reader, None).next_message() {
-                        Ok(msg) => {
-                            trace!("Local: get messag from peer: {:?}", msg);
-                        }
-                        a => {
-                            trace!("read: {:?}", a);
-                        }
-                    }
-
-                }
-            });
-
-
-
-            // create peer
-            let socketaddr = address.parse().unwrap();
-            let peer = Peer::new(1, &socketaddr, writer);
-            result(Ok(peer))
-        })
-}
 
 impl Peer {
     fn new(id: u64, address: &SocketAddr, socket: WriteHalf<TcpStream>) -> Peer {
@@ -117,14 +97,6 @@ impl Peer {
             version: None,
         }
     }
-
-//    fn connect<'a>(&'a mut self) -> impl Future<Item = tokio::net::TcpStream, Error = std::io::Error> + 'a {
-//        TcpStream::connect(&self.address)
-//            .and_then(|stream| {
-//                self.socket = Some(stream);
-//                stream
-//            })
-//    }
 
     fn send(& mut self, msg: NetworkMessage) -> Result<(), Error> {
         trace!("Send message: peeer={}, message={:?}", self.id, msg);
@@ -181,51 +153,33 @@ fn version_message() -> VersionMessage {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tokio::prelude::Stream;
+    use tokio::prelude::{Stream, Sink};
     use tokio::net::TcpListener;
     use std::thread;
     use tokio::io::ErrorKind;
     use std::time::Duration;
+    use tokio::prelude::future::FutureResult;
 
-    #[test]
-    fn connect2_test() {
-        simple_logger::init().unwrap();
-
-        let con = connect2("127.0.0.1:18444");
-
-        let result = con.wait();
-        println!("{:?}", result);
-    }
-
-    #[test]
-    fn connect_test() {
-        simple_logger::init().unwrap();
-
-        let con = connect("127.0.0.1:18444");
-
-        let _ = con.wait();
-    }
-
-    fn run_dummy_remote_peer(addr: &SocketAddr) {
+    fn run_dummy_remote_peer(addr: &str) -> impl Future<Item = (), Error=()>{
+        let addr = addr.parse().unwrap();
         // create dummy server
-        let listener = TcpListener::bind(addr)
+        let listener = TcpListener::bind(&addr)
             .expect("unable to bind TCP listener");
 
         let incoming = listener.incoming();
 
-        let server = incoming
+        incoming
             .map_err(|e| eprintln!("accept failed = {:?}", e))
             .for_each(|socket| {
                 trace!("incoming new connection, {:?}", socket);
                 let (reader, writer) = socket.split();
 
-
                 // handle reader
-                let buf = vec!(0u8; 1024 * 1024);
+                let buf = vec!(0u8; 8);
                 let handle_read = tokio::io::read_exact(reader, buf).map(|(reader, buf)| {
                     trace!("Remote: read from buffer {:?}", buf);
                 }).map_err(|err| {
-                    eprintln!("I/O error {:?}", err)
+                    eprintln!("Remote: I/O error {:?}", err)
                 });
 
                 tokio::spawn(handle_read);
@@ -247,104 +201,40 @@ mod tests {
                 });
 
                 tokio::spawn(handle_conn)
-            });
+            })
+    }
 
-        tokio::run(server);
+    fn create_client(addr: &str) -> impl tokio::prelude::Future<Item=(), Error=()> {
+        connect(addr).and_then(|framed| {
+            trace!("Local: Connect");
+
+            let (sink, stream) = framed.split();
+            let send = sink.send(NetworkMessage::Version(version_message()))
+                .map_err(|e| println!("error = {:?}", e))
+                .and_then(|a| {
+                    Ok(())
+                });
+
+            tokio::spawn(send);
+
+            stream.for_each(|msg| {
+                trace!("Local Receve {:?}", msg);
+                Ok(())
+            })
+        }).map_err(|e| println!("error = {:?}", e))
     }
 
     #[test]
-    fn handle_message_test() {
+    fn connect2_test() {
         simple_logger::init().unwrap();
 
-        let remote = thread::spawn(move || {
-            run_dummy_remote_peer(&("127.0.0.1:18555".parse().unwrap()))
+        let future = tokio::prelude::future::lazy(|| {
+            let remote = run_dummy_remote_peer("127.0.0.1:18555");
+            tokio::spawn(remote);
+            let client = create_client("127.0.0.1:18555");
+            tokio::spawn(client)
         });
-        trace!("Dummy Server Started");
 
-//        let peer;
-
-        use tokio::{
-            runtime::Runtime,
-            prelude::future::{
-                FutureResult,
-                lazy,
-                result,
-            },
-        };
-
-        let mut runtime = Runtime::new().unwrap();
-
-        let result = runtime.block_on(lazy(|| -> FutureResult<Peer, std::io::Error> {
-            trace!("Local: waiting connection");
-            let mut connect_future = connect("127.0.0.1:18555");
-
-
-
-            loop {
-                match connect_future.poll() {
-                    Ok(Async::Ready(peer)) => {
-                        trace!("Local: peer: {:?}", peer);
-                        return result(Ok(peer))
-                    }
-                    Ok(Async::NotReady) => {
-                        trace!("Local: Not Ready");
-                    },
-                    Err(e) => {
-                        trace!("Local: Not Ok, {}", e);
-                    }
-                }
-
-                thread::sleep(Duration::new(1, 0));
-            }
-        }));
-
-//        if let FutureResult({inner: Some(p)}) = result {
-//
-//        }
-
-//        futures::executor::block_on(|&mut context| {
-//            match connect_future.poll(context) {
-//                Ok(Async::Ready(peer)) => {
-//                    trace!("{:?}", peer);
-//                },
-//                _ => {
-//                    trace!("Not Ok");
-//                }
-//            }
-//        });
-//        futures::(futures::future::lazy(|&mut context| {
-//            match connect_future.compat().poll(context) {
-//                Ok(Async::Ready(peer)) => {
-//                    trace!("{:?}", peer);
-//                },
-//                _ => {
-//                    trace!("Not Ok");
-//                }
-//            }
-//        })).wait_future();
-
-//        connect_future.
-//
-//        let mut stream = connect_future.into_stream();
-//        loop {
-//            match stream.poll() {
-//                Ok(Async::Ready(Some(p))) => {
-//                    trace!("{:?}", p);
-//                },
-//                _ => {}
-//            }
-//        }
-
-//        let mut peer = Peer::new(1, &addr);
-//        let result  = peer.connect().wait();
-
-//        let hoge = StreamReader::new(&mut read, None).next_message();
-//        trace!("{:?}", hoge);
-
-        trace!("Connected");
-
-
-        let _ = remote.join();
+        tokio::run(future);
     }
-
 }
