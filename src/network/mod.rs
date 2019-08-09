@@ -1,4 +1,5 @@
 use std::{
+    io,
     net::SocketAddr,
     time::{SystemTime, UNIX_EPOCH},
     sync::atomic::{AtomicUsize, Ordering},
@@ -42,6 +43,35 @@ struct Peer {
     connected: bool,
     local_version: VersionMessage,
     version: Option<VersionMessage>,
+}
+
+struct HandleConnectFuture {
+    inner: ConnectFuture
+}
+
+impl Future for HandleConnectFuture
+{
+    type Item = (ReadHalf<TcpStream>, WriteHalf<TcpStream>);
+    type Error = io::Error;
+
+    fn poll(&mut self) -> Result<Async<Self::Item>, io::Error> {
+        match self.inner.poll()? {
+            Async::Ready(stream) => Ok(Async::Ready(stream.split())),
+            Async::NotReady => Ok(Async::NotReady),
+        }
+    }
+}
+
+fn handle_connect(future: ConnectFuture) -> HandleConnectFuture {
+    HandleConnectFuture {
+        inner: future
+    }
+}
+
+fn connect2(address: &str) -> HandleConnectFuture {
+    let socketaddr = address.parse().unwrap();
+    let connect = TcpStream::connect(&socketaddr);
+    handle_connect(connect)
 }
 
 fn connect<'a>(address: &'a str) -> impl Future<Item = Peer, Error = std::io::Error> + 'a {
@@ -156,6 +186,16 @@ mod tests {
     use std::thread;
     use tokio::io::ErrorKind;
     use std::time::Duration;
+
+    #[test]
+    fn connect2_test() {
+        simple_logger::init().unwrap();
+
+        let con = connect2("127.0.0.1:18444");
+
+        let result = con.wait();
+        println!("{:?}", result);
+    }
 
     #[test]
     fn connect_test() {
