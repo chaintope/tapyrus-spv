@@ -11,3 +11,4 @@ simple_logger="1.3"
 tokio = "0.1.22"
 rand = "0.7.0"
 futures-preview = { version = "0.3.0-alpha.17", features = ["io-compat"] }
+bytes = "0.4.12"

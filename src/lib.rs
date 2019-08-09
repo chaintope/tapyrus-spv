@@ -19,6 +19,7 @@ extern crate bitcoin;
 extern crate tokio;
 #[macro_use]
 extern crate log;
+extern crate bytes;
 
 use bitcoin::network::constants::Network;
 
