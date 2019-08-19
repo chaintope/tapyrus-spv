@@ -14,7 +14,6 @@
 
 #![feature(async_await)]
 
-
 extern crate bitcoin;
 extern crate tokio;
 #[macro_use]
@@ -24,6 +23,9 @@ extern crate bytes;
 use bitcoin::network::constants::Network;
 
 mod network;
+
+#[cfg(test)]
+mod test_helpers;
 
 
 /// SPV
