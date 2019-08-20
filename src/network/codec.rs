@@ -26,6 +26,7 @@ impl std::convert::From<std::io::Error> for Error {
 }
 
 /// Codec for bytes stream carrying NetworkMessage.
+#[derive(Debug)]
 pub struct NetworkMessagesCodec {}
 
 impl NetworkMessagesCodec {
@@ -54,7 +55,7 @@ impl Encoder for NetworkMessagesCodec {
 
     fn encode(&mut self, message: NetworkMessage, buf: &mut bytes::BytesMut) -> Result<(), Self::Error> {
         let raw_msg = RawNetworkMessage {
-            magic: Network::Testnet.magic(),
+            magic: Network::Regtest.magic(), // TODO: Make user can specify network type.
             payload: message,
         };
 
