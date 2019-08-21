@@ -1,10 +1,7 @@
 use tokio::codec::{Encoder, Decoder};
 use bitcoin::{
     consensus::{Encodable, deserialize_partial, encode},
-    network::{
-        message::{NetworkMessage, RawNetworkMessage},
-        constants::Network,
-    }
+    network::message::RawNetworkMessage,
 };
 use std::{
     io,
@@ -33,14 +30,14 @@ impl NetworkMessagesCodec {
 }
 
 impl Decoder for NetworkMessagesCodec {
-    type Item = NetworkMessage;
+    type Item = RawNetworkMessage;
     type Error = Error;
 
-    fn decode(&mut self, src: &mut bytes::BytesMut) -> Result<Option<NetworkMessage>, Error> {
+    fn decode(&mut self, src: &mut bytes::BytesMut) -> Result<Option<RawNetworkMessage>, Error> {
         match deserialize_partial::<RawNetworkMessage>(& src) {
             Ok((raw_msg, consumed)) => {
                 src.advance(consumed);
-                Ok(Some(raw_msg.payload))
+                Ok(Some(raw_msg))
             }
             Err(encode::Error::Io(ref e)) if e.kind() == ErrorKind::UnexpectedEof => Ok(None),
             Err(e) => Err(Error::Encode(e)),
@@ -49,18 +46,13 @@ impl Decoder for NetworkMessagesCodec {
 }
 
 impl Encoder for NetworkMessagesCodec {
-    type Item = NetworkMessage;
+    type Item = RawNetworkMessage;
     type Error = io::Error;
 
-    fn encode(&mut self, message: NetworkMessage, buf: &mut bytes::BytesMut) -> Result<(), Self::Error> {
-        let raw_msg = RawNetworkMessage {
-            magic: Network::Regtest.magic(), // TODO: Make user can specify network type.
-            payload: message,
-        };
-
+    fn encode(&mut self, message: RawNetworkMessage, buf: &mut bytes::BytesMut) -> Result<(), Self::Error> {
         let mut buf = BytesMut::new(buf);
 
-        raw_msg.consensus_encode(&mut buf).unwrap();
+        message.consensus_encode(&mut buf).unwrap();
         Ok(())
     }
 }
@@ -70,7 +62,8 @@ mod tests {
     use super::*;
     use crate::test_helpers::*;
     use bytes::BufMut;
-    use bitcoin::network::message::NetworkMessage::Version;
+    use bitcoin::network::constants::Network;
+    use bitcoin::network::message::NetworkMessage;
 
     #[test]
     fn decode_test() {
@@ -100,7 +93,7 @@ mod tests {
         let mut buf = bytes::BytesMut::with_capacity(1024);
         buf.put_slice(&data);
 
-        if let Ok(Some(Version(msg))) = codec.decode(&mut buf) {
+        if let Ok(Some(RawNetworkMessage{ payload: NetworkMessage::Version(msg), .. })) = codec.decode(&mut buf) {
             assert_eq!(msg.user_agent, "/bitcoin-spv:0.1.0/".to_string());
         } else {
             assert!(false);
@@ -128,7 +121,11 @@ mod tests {
 
     #[test]
     fn encode_test() {
-        let msg = NetworkMessage::Version(version_message());
+        let msg = RawNetworkMessage {
+            magic: Network::Regtest.magic(),
+            payload: NetworkMessage::Version(version_message()),
+        };
+
         let mut codec = NetworkMessagesCodec::new();
 
         let mut buf = bytes::BytesMut::with_capacity(1024);

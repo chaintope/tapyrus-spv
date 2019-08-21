@@ -13,6 +13,7 @@ pub mod codec;
 
 enum Error {
     IoError(std::io::Error),
+    WrongMagicBytes,
 }
 
 impl From<std::io::Error> for Error {

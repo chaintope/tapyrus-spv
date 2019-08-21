@@ -2,11 +2,13 @@ use tokio::{prelude::*, net::{
     TcpStream,
     tcp::ConnectFuture,
 }, codec::Framed};
+use bitcoin::network::constants::Network;
 use crate::network::codec::NetworkMessagesCodec;
 use crate::network::{codec, Peer};
 
 pub struct HandleConnectFuture {
-    inner: ConnectFuture
+    inner: ConnectFuture,
+    network: Network,
 }
 
 pub type NetworkMessageStream = Framed<TcpStream, NetworkMessagesCodec>;
@@ -19,7 +21,7 @@ impl Future for HandleConnectFuture
     fn poll(&mut self) -> Result<Async<Self::Item>, codec::Error> {
         match self.inner.poll()? {
             Async::Ready(stream) => {
-                let peer = Peer::new(0, stream);
+                let peer = Peer::new(0, stream, self.network);
 
                 Ok(Async::Ready(peer))
             },
@@ -28,11 +30,12 @@ impl Future for HandleConnectFuture
     }
 }
 
-pub fn connect(address: &str) -> HandleConnectFuture {
+pub fn connect(address: &str, network: Network) -> HandleConnectFuture {
     let socketaddr = address.parse().unwrap();
     let connect = TcpStream::connect(&socketaddr);
 
     HandleConnectFuture {
-        inner: connect
+        inner: connect,
+        network,
     }
 }

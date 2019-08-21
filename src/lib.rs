@@ -38,9 +38,9 @@ pub struct SPV {
 
 impl SPV {
     /// returns SPV instance.
-    pub fn new() -> SPV {
+    pub fn new(network: Network) -> SPV {
         SPV {
-            network: Network::Testnet,
+            network,
         }
     }
 
@@ -48,7 +48,7 @@ impl SPV {
     pub fn run(&self) {
         info!("start SPV node.");
 
-        let connection = connect("127.0.0.1:18444")
+        let connection = connect("127.0.0.1:18444", self.network)
             .map_err(|e| { eprintln!("{:?}", e) })
             .and_then(|peer| { peer });
         tokio::run(connection);
