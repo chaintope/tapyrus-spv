@@ -9,7 +9,6 @@ use bitcoin::{
 use std::{
     io,
     io::ErrorKind,
-    sync::atomic::AtomicUsize,
 };
 use super::bytes::BytesMut;
 
@@ -70,10 +69,6 @@ impl Encoder for NetworkMessagesCodec {
 mod tests {
     use super::*;
     use crate::test_helpers::*;
-    use bitcoin::network::{
-        message_network::VersionMessage,
-        address::Address,
-    };
     use bytes::BufMut;
     use bitcoin::network::message::NetworkMessage::Version;
 

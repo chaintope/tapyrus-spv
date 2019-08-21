@@ -1,8 +1,14 @@
 use bytes;
 use bytes::BufMut;
-use std::io::Write;
-use std::io::Error;
+use std::io::{Write, Error};
 
+/// This is a wrapper struct for implementing Write trait to bytes::BytesMut.
+///
+/// This struct is using in NetworkMessage encoding process in codec.rs. tokio's Encoder
+/// trait gets buffer as bytes::BytesMut, but this struct doesn't implement std::io::Write trait.
+/// And rust-bitcoin's encode function which is Encodable.consensus_encode() claims a buffer which
+/// is implementing std::io::Write trait.
+/// We need to use this struct for adapting these functionality.
 pub struct BytesMut<'a> {
     inner: &'a mut bytes::BytesMut,
 }
@@ -19,7 +25,7 @@ impl<'a> BytesMut<'a> {
 
 impl<'a> Write for BytesMut<'a> {
     fn write(&mut self, buf: &[u8]) -> Result<usize, Error> {
-        let remaining_capacity = self.inner.remaining_mut();
+        let remaining_capacity = self.remaining_mut();
         if remaining_capacity >= buf.len() {
             self.inner.put_slice(buf);
             return Ok(buf.len());
