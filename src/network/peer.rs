@@ -1,7 +1,6 @@
 use std::{
     net::SocketAddr,
     time::{SystemTime, UNIX_EPOCH},
-    sync::atomic::{AtomicUsize, Ordering},
 };
 use rand::{RngCore, thread_rng};
 use tokio::{
@@ -23,6 +22,7 @@ use bitcoin::{
 use crate::network::codec::NetworkMessagesCodec;
 use crate::network::handle_connection::NetworkMessageStream;
 use crate::network::Error;
+use std::borrow::BorrowMut;
 
 pub struct Peer {
     pub id: u64,
@@ -55,6 +55,8 @@ impl Peer {
     }
 
     pub fn start_send(&mut self, message: NetworkMessage) {
+        trace!("Sending message: {:?}", message);
+
         let raw_msg = RawNetworkMessage {
             magic: self.network.magic(),
             payload: message
@@ -114,29 +116,29 @@ impl Future for Peer {
 }
 
 pub fn version_message() -> VersionMessage {
-    let remote = "127.0.0.1:18444".parse().unwrap();
-    let local = "127.0.0.1:18444".parse().unwrap();
+    let blank_addr = "[0:0:0:0:0:0:0:0]:0".parse().unwrap();
 
     // now in unix time
     let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as i64;
 
-    const SERVICE_BLOCKS:u64 = 1;
-    const SERVICE_WITNESS:u64 =  1 << 3;
+    let services = 0;
 
-    let services = SERVICE_BLOCKS + SERVICE_WITNESS;
-    let mut rng =  thread_rng();
-    let nonce = rng.next_u64(); // クライアントごとに固定？
+    // generate random value
+    let nonce =  thread_rng().borrow_mut().next_u64();
 
-    let height = AtomicUsize::new(0);
+    // TODO: after block database is constructed, set actual latest block height.
+    let start_height = 0;
+
+    const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
     // build message
     VersionMessage::new(
         services,
         timestamp,
-        Address::new(&remote, 1),
-        Address::new(&local, 1),
+        Address::new(&blank_addr, 0),
+        Address::new(&blank_addr, services),
         nonce,
-        "/bitcoin-spv:0.1.0/".to_string(),
-        height.load(Ordering::Relaxed) as i32
+        format!("/bitcoin-spv:{}/", VERSION),
+        start_height
     )
 }
