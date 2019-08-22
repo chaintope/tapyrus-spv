@@ -9,9 +9,7 @@
 #![deny(unused_mut)]
 #![deny(missing_docs)]
 #![deny(unused_must_use)]
-
 #![forbid(unsafe_code)]
-
 #![feature(async_await)]
 
 extern crate bitcoin;
@@ -20,8 +18,8 @@ extern crate tokio;
 extern crate log;
 extern crate bytes;
 
-use bitcoin::network::constants::Network;
 use crate::network::connect;
+use bitcoin::network::constants::Network;
 use tokio::prelude::Future;
 
 mod network;
@@ -35,9 +33,7 @@ pub struct SPV {
 impl SPV {
     /// returns SPV instance.
     pub fn new(network: Network) -> SPV {
-        SPV {
-            network,
-        }
+        SPV { network }
     }
 
     /// run spv node.
@@ -45,8 +41,8 @@ impl SPV {
         info!("start SPV node.");
 
         let connection = connect("127.0.0.1:18444", self.network)
-            .map_err(|e| { eprintln!("{:?}", e) })
-            .and_then(|peer| { peer });
+            .map_err(|e| eprintln!("{:?}", e))
+            .and_then(|peer| peer);
         tokio::run(connection);
     }
 }

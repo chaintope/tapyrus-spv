@@ -1,8 +1,8 @@
 extern crate simple_logger;
 
-use tapyrus_spv::SPV;
-use log::Level;
 use bitcoin::network::constants::Network;
+use log::Level;
+use tapyrus_spv::SPV;
 
 fn main() {
     // TODO: specify log level by user argument

@@ -1,28 +1,19 @@
+use crate::network::codec::NetworkMessagesCodec;
+use crate::network::handle_connection::NetworkMessageStream;
+use crate::network::Error;
+use bitcoin::network::{
+    address::Address,
+    constants::Network,
+    message::{NetworkMessage, RawNetworkMessage},
+    message_network::VersionMessage,
+};
+use rand::{thread_rng, RngCore};
+use std::borrow::BorrowMut;
 use std::{
     net::SocketAddr,
     time::{SystemTime, UNIX_EPOCH},
 };
-use rand::{RngCore, thread_rng};
-use tokio::{
-    prelude::*,
-    net::TcpStream,
-    codec::Framed,
-};
-use bitcoin::{
-    network::{
-        message_network::VersionMessage,
-        message::{
-            RawNetworkMessage,
-            NetworkMessage,
-        },
-        address::Address,
-        constants::Network,
-    },
-};
-use crate::network::codec::NetworkMessagesCodec;
-use crate::network::handle_connection::NetworkMessageStream;
-use crate::network::Error;
-use std::borrow::BorrowMut;
+use tokio::{codec::Framed, net::TcpStream, prelude::*};
 
 pub struct Peer {
     pub id: u64,
@@ -59,7 +50,7 @@ impl Peer {
 
         let raw_msg = RawNetworkMessage {
             magic: self.network.magic(),
-            payload: message
+            payload: message,
         };
 
         let _ = self.stream.start_send(raw_msg);
@@ -103,7 +94,7 @@ impl Future for Peer {
                         return Err(());
                     }
                 }
-                Async::Ready(None) => {},
+                Async::Ready(None) => {}
                 Async::NotReady => break,
             }
         }
@@ -119,12 +110,15 @@ pub fn version_message() -> VersionMessage {
     let blank_addr = "[0:0:0:0:0:0:0:0]:0".parse().unwrap();
 
     // now in unix time
-    let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as i64;
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs() as i64;
 
     let services = 0;
 
     // generate random value
-    let nonce =  thread_rng().borrow_mut().next_u64();
+    let nonce = thread_rng().borrow_mut().next_u64();
 
     // TODO: after block database is constructed, set actual latest block height.
     let start_height = 0;
@@ -139,6 +133,6 @@ pub fn version_message() -> VersionMessage {
         Address::new(&blank_addr, services),
         nonce,
         format!("/bitcoin-spv:{}/", VERSION),
-        start_height
+        start_height,
     )
 }

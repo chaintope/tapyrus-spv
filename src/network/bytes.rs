@@ -1,6 +1,6 @@
 use bytes;
 use bytes::BufMut;
-use std::io::{Write, Error};
+use std::io::{Error, Write};
 
 /// This is a wrapper struct for implementing Write trait to bytes::BytesMut.
 ///
@@ -46,7 +46,7 @@ mod tests {
     use rand;
 
     fn get_random_bytes(len: usize) -> Vec<u8> {
-        (0..len).map(|_| { rand::random::<u8>() }).collect()
+        (0..len).map(|_| rand::random::<u8>()).collect()
     }
 
     #[test]
@@ -62,7 +62,10 @@ mod tests {
         assert_eq!(bytes_mut.remaining_mut(), capacity - 5);
 
         // write bytes over capacity length, just current capacity length is written.
-        assert_eq!(bytes_mut.write(&get_random_bytes(capacity)).unwrap(), capacity - 5);
+        assert_eq!(
+            bytes_mut.write(&get_random_bytes(capacity)).unwrap(),
+            capacity - 5
+        );
         assert_eq!(bytes_mut.remaining_mut(), 0);
 
         // write to buffer which has full capacity bytes, no more written.

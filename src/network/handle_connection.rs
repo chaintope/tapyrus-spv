@@ -1,10 +1,11 @@
-use tokio::{prelude::*, net::{
-    TcpStream,
-    tcp::ConnectFuture,
-}, codec::Framed};
-use bitcoin::network::constants::Network;
 use crate::network::codec::NetworkMessagesCodec;
 use crate::network::{codec, Peer};
+use bitcoin::network::constants::Network;
+use tokio::{
+    codec::Framed,
+    net::{tcp::ConnectFuture, TcpStream},
+    prelude::*,
+};
 
 pub struct HandleConnectFuture {
     inner: ConnectFuture,
@@ -13,8 +14,7 @@ pub struct HandleConnectFuture {
 
 pub type NetworkMessageStream = Framed<TcpStream, NetworkMessagesCodec>;
 
-impl Future for HandleConnectFuture
-{
+impl Future for HandleConnectFuture {
     type Item = Peer;
     type Error = codec::Error;
 
@@ -24,7 +24,7 @@ impl Future for HandleConnectFuture
                 let peer = Peer::new(0, stream, self.network);
 
                 Ok(Async::Ready(peer))
-            },
+            }
             Async::NotReady => Ok(Async::NotReady),
         }
     }
