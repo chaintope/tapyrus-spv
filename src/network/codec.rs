@@ -60,10 +60,10 @@ impl Encoder for NetworkMessagesCodec {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_helpers::*;
     use bytes::BufMut;
     use bitcoin::network::constants::Network;
     use bitcoin::network::message::NetworkMessage;
+    use crate::network::peer::version_message;
 
     #[test]
     fn decode_test() {

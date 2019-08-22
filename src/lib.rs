@@ -26,10 +26,6 @@ use tokio::prelude::Future;
 
 mod network;
 
-#[cfg(test)]
-mod test_helpers;
-
-
 /// SPV
 #[derive(Clone)]
 pub struct SPV {
