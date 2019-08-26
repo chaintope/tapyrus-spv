@@ -10,10 +10,39 @@
 #![deny(missing_docs)]
 #![deny(unused_must_use)]
 #![forbid(unsafe_code)]
+#![feature(async_await)]
 
 extern crate bitcoin;
+extern crate tokio;
 #[macro_use]
 extern crate log;
+extern crate bytes;
 
-/// Tapyrus SPV Implementation
-pub mod tapyrus_spv {}
+use crate::network::connect;
+use bitcoin::network::constants::Network;
+use tokio::prelude::Future;
+
+mod network;
+
+/// SPV
+#[derive(Clone)]
+pub struct SPV {
+    network: Network,
+}
+
+impl SPV {
+    /// returns SPV instance.
+    pub fn new(network: Network) -> SPV {
+        SPV { network }
+    }
+
+    /// run spv node.
+    pub fn run(&self) {
+        info!("start SPV node.");
+
+        let connection = connect("127.0.0.1:18444", self.network)
+            .map_err(|e| eprintln!("{:?}", e))
+            .and_then(|peer| peer);
+        tokio::run(connection);
+    }
+}
