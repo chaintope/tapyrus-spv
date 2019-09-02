@@ -1,6 +1,4 @@
-use crate::network::codec::NetworkMessagesCodec;
-use crate::network::handle_connection::NetworkMessageStream;
-use crate::network::Error;
+use crate::network::{codec::NetworkMessagesCodec, Error};
 use bitcoin::network::{
     address::Address,
     constants::Network,
@@ -8,43 +6,41 @@ use bitcoin::network::{
     message_network::VersionMessage,
 };
 use rand::{thread_rng, RngCore};
-use std::borrow::BorrowMut;
 use std::{
+    borrow::BorrowMut,
     net::SocketAddr,
     time::{SystemTime, UNIX_EPOCH},
 };
 use tokio::{codec::Framed, net::TcpStream, prelude::*};
 
-pub struct Peer {
+pub struct Peer<T>
+where
+    T: Sink<SinkItem = RawNetworkMessage> + Stream<Item = RawNetworkMessage>,
+{
     pub id: u64,
     pub addr: SocketAddr,
     pub network: Network,
-    pub stream: NetworkMessageStream,
+    pub stream: T,
     pub version: Option<VersionMessage>,
 }
 
-impl Peer {
-    pub fn new(id: u64, socket: TcpStream, network: Network) -> Peer {
-        let addr = socket.peer_addr().unwrap();
-        let framed = Framed::new(socket, NetworkMessagesCodec::new());
-
-        let mut peer = Peer {
+impl<T> Peer<T>
+where
+    T: Sink<SinkItem = RawNetworkMessage> + Stream<Item = RawNetworkMessage>,
+{
+    pub fn new(id: u64, stream: T, addr: SocketAddr, network: Network) -> Peer<T> {
+        Peer {
             id,
             addr,
             network,
-            stream: framed,
+            stream,
             version: None,
-        };
-        peer.start_handshake();
-
-        peer
+        }
     }
 
-    pub fn start_handshake(&mut self) {
-        // start handshake
-        let _ = self.start_send(NetworkMessage::Version(version_message()));
-    }
-
+    /// Start to send message.
+    /// This function just put message into buffer on sink. So call stream.poll_complete() to  send
+    /// to remote.
     pub fn start_send(&mut self, message: NetworkMessage) {
         trace!("Sending message: {:?}", message);
 
@@ -56,54 +52,50 @@ impl Peer {
         let _ = self.stream.start_send(raw_msg);
     }
 
-    fn process_message(&mut self, message: RawNetworkMessage) -> Result<(), Error> {
-        if message.magic != self.network.magic() {
-            info!("Wrong magic bytes.");
-            return Err(Error::WrongMagicBytes);
-        }
-
-        match message.payload {
-            NetworkMessage::Version(version) => {
-                trace!("Receive version message: {:?}", version);
-                self.version = Some(version);
-
-                // send verack message
-                let _ = self.start_send(NetworkMessage::Verack);
-            }
-            message => {
-                trace!("Receive message: {:?}", message);
-            }
-        }
-
-        Ok(())
+    /// flush all queued sending messages.
+    pub fn flush(&mut self) {
+        let _ = self.stream.poll_complete();
     }
 }
 
-impl Future for Peer {
-    type Item = ();
-    type Error = ();
+impl<T> Stream for Peer<T>
+where
+    T: Sink<SinkItem = RawNetworkMessage> + Stream<Item = RawNetworkMessage>,
+    Error: From<T::Error>,
+{
+    type Item = NetworkMessage;
+    type Error = Error;
 
-    fn poll(&mut self) -> Result<Async<Self::Item>, Self::Error> {
-        trace!("Peer {} polling...", self.id);
-
-        loop {
-            match self.stream.poll().unwrap() {
-                Async::Ready(Some(message)) => {
-                    if let Err(Error::WrongMagicBytes) = self.process_message(message) {
-                        // Stop polling this peer future by returning error, then tcp will be disconnected.
-                        return Err(());
-                    }
+    fn poll(&mut self) -> Result<Async<Option<Self::Item>>, Self::Error> {
+        match self.stream.poll()? {
+            Async::Ready(Some(message)) => {
+                if message.magic != self.network.magic() {
+                    info!("Wrong magic bytes.");
+                    return Err(Error::WrongMagicBytes);
                 }
-                Async::Ready(None) => {}
-                Async::NotReady => break,
+
+                trace!("Receive message: {:?}", message);
+                Ok(Async::Ready(Some(message.payload)))
             }
+            Async::Ready(None) => Ok(Async::Ready(None)),
+            Async::NotReady => Ok(Async::NotReady),
         }
-
-        // flush all queued sending messages.
-        let _ = self.stream.poll_complete();
-
-        Ok(Async::NotReady)
     }
+}
+
+pub fn connect(
+    address: &str,
+    network: Network,
+) -> impl Future<Item = Peer<Framed<TcpStream, NetworkMessagesCodec>>, Error = Error> {
+    let socketaddr = address.parse().unwrap();
+
+    TcpStream::connect(&socketaddr)
+        .map(move |stream| {
+            let addr = stream.peer_addr().unwrap();
+            let stream = Framed::new(stream, NetworkMessagesCodec::new());
+            Peer::new(0, stream, addr, network)
+        })
+        .map_err(|e| Error::from(e))
 }
 
 pub fn version_message() -> VersionMessage {

@@ -18,7 +18,7 @@ extern crate tokio;
 extern crate log;
 extern crate bytes;
 
-use crate::network::connect;
+use crate::network::{connect, Handshake};
 use bitcoin::network::constants::Network;
 use tokio::prelude::Future;
 
@@ -41,8 +41,9 @@ impl SPV {
         info!("start SPV node.");
 
         let connection = connect("127.0.0.1:18444", self.network)
-            .map_err(|e| eprintln!("{:?}", e))
-            .and_then(|peer| peer);
+            .and_then(|peer| Handshake::new(peer))
+            .map(|_peer| {})
+            .map_err(|e| error!("Error: {:?}", e));
         tokio::run(connection);
     }
 }
