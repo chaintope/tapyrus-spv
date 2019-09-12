@@ -9,6 +9,9 @@ pub use peer::Peer;
 mod handshake;
 pub use handshake::Handshake;
 
+mod blockheaderdownload;
+pub use blockheaderdownload::BlockHeaderDownload;
+
 pub mod bytes;
 pub mod codec;
 
