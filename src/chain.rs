@@ -1,5 +1,6 @@
-use bitcoin::{BlockHeader, Network};
+use bitcoin::{BlockHeader, Network, BitcoinHash};
 use bitcoin::blockdata::constants::genesis_block;
+use bitcoin_hashes::sha256d;
 
 pub struct Error;
 
@@ -40,5 +41,10 @@ impl Chain {
 
     pub fn height(&self) -> usize {
         self.headers.len() - 1
+    }
+
+    pub fn get_locator(&self) -> Vec<sha256d::Hash> {
+        let genesis = genesis_block(Network::Regtest);
+        vec![genesis.header.bitcoin_hash()]
     }
 }

@@ -8,7 +8,7 @@ use tokio::prelude::{Async, Future, Sink, Stream};
 use bitcoin::blockdata::block::LoneBlockHeader;
 use std::sync::{Arc, Mutex};
 use bitcoin::blockdata::constants::genesis_block;
-use crate::chain::ChainState;
+use crate::chain::{ChainState, Chain};
 
 pub struct BlockHeaderDownload<T>
 where
@@ -16,7 +16,7 @@ where
 {
     peer: Option<RefCell<Peer<T>>>,
     started: bool,
-    headers_processor: HeadersProcessor
+    chain_state: Arc<Mutex<ChainState>>
 }
 
 impl<T> BlockHeaderDownload<T>
@@ -27,20 +27,21 @@ where
         BlockHeaderDownload {
             peer: Some(RefCell::new(peer)),
             started: false,
-            headers_processor: HeadersProcessor { chain_state }
+            chain_state,
         }
     }
 
-    fn get_locator(&self) -> Vec<sha256d::Hash> {
-        let genesis = genesis_block(Network::Regtest);
-        vec![genesis.header.bitcoin_hash()]
-    }
-
-    fn send_getheaders(&self, peer: &mut Peer<T>) {
-        let locators = self.get_locator();
+    fn send_getheaders(&self, peer: &mut Peer<T>, chain: &Chain) {
+        let locators = chain.get_locator();
         let stop_hash = sha256d::Hash::default();
         let getheaders = GetHeadersMessage::new(locators, stop_hash);
         peer.start_send(NetworkMessage::GetHeaders(getheaders));
+    }
+}
+
+fn process_headers(chain_active: &mut Chain, headers: Vec<LoneBlockHeader>) {
+    for header in headers {
+        let _ = chain_active.connect_block_header(header.header);
     }
 }
 
@@ -55,18 +56,22 @@ where
     fn poll(&mut self) -> Result<Async<Self::Item>, Self::Error> {
         let mut done = false;
 
+        let mut chain_state = self.chain_state.lock().unwrap();
+        let chain_active = chain_state.borrow_mut_chain_active();
+
         if let Some(ref peer) = self.peer {
             let mut peer = peer.borrow_mut();
 
             if !self.started {
-                self.send_getheaders(&mut peer);
+                self.send_getheaders(&mut peer, chain_active);
                 self.started = true;
             }
 
             loop {
                 match peer.poll()? {
                     Async::Ready(Some(NetworkMessage::Headers(headers))) => {
-                        self.headers_processor.process(headers);
+                        process_headers(chain_active, headers);
+
                         done = true;
                     }
                     Async::Ready(None) => break,
@@ -87,21 +92,6 @@ where
         }
     }
 }
-
-struct HeadersProcessor {
-    pub chain_state: Arc<Mutex<ChainState>>
-}
-
-impl HeadersProcessor {
-    pub fn process(&mut self, headers: Vec<LoneBlockHeader>) {
-        for header in headers {
-            let mut chain_state = self.chain_state.lock().unwrap();
-            let chain_active = chain_state.borrow_mut_chain_active();
-            let _ = chain_active.connect_block_header(header.header);
-        }
-    }
-}
-
 
 #[cfg(test)]
 mod tests {
