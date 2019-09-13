@@ -104,17 +104,47 @@ impl HeadersProcessor {
             headers.push(header.header);
         }
     }
-
-//    pub fn headers(&self) -> &Vec<BlockHeader> {
-//        self.headers.lock().unwrap()
-//    }
 }
 
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_helper::{channel, get_test_headers};
+    use crate::test_helper::{channel, get_test_headers, TwoWayChannel};
+
+    /// Build remote peer for testing BlockHeaderDownload future.
+    /// Remote peer checks and responds messages from local peer.
+    fn remote_peer(stream: TwoWayChannel<RawNetworkMessage>) -> impl Future<Item=(), Error=()> {
+        stream
+            .into_future()
+            .map(|(msg, mut here)| {
+                match msg {
+                    Some(RawNetworkMessage {
+                             payload: NetworkMessage::GetHeaders(
+                                 GetHeadersMessage {
+                                     locator_hashes: locator_hashes,
+                                     stop_hash: stop_hash,
+                                     ..
+                                 }),
+                             ..
+                         }) => {
+                        // test BlockHeaderDownload future send collect message.
+                        assert_eq!(locator_hashes, vec![genesis_block(Network::Regtest).header.bitcoin_hash()]);
+                        assert_eq!(stop_hash, sha256d::Hash::default());
+                    },
+                    _ => assert!(false)
+                }
+
+                let headers_message = RawNetworkMessage {
+                    magic: Network::Regtest.magic(),
+                    payload: NetworkMessage::Headers(get_test_headers(0, 10))
+                };
+
+                let _ = here.start_send(headers_message);
+                ()
+            })
+            .map_err(|_| {})
+    }
 
     #[test]
     fn blockheaderdownload_test() {
@@ -123,43 +153,20 @@ mod tests {
         let peer = Peer::new(0, there, "0.0.0.0:0".parse().unwrap(), Network::Regtest);
         let genesis = genesis_block(Network::Regtest);
         let headers = Arc::new(Mutex::new(vec![genesis.header]));
+        let headers_for_block_header_download = headers.clone();
 
         let future = tokio::prelude::future::lazy(move || {
-            let blockheaderdownload = BlockHeaderDownload::new(peer, headers)
-                .map(|_| {})
-                .map_err(|_| {});
-            tokio::spawn(blockheaderdownload);
+            tokio::spawn(remote_peer(here));
 
-            let test_future = here
-                .into_future()
-                .map(|(msg, mut here)| {
-                    match msg {
-                        Some(RawNetworkMessage {
-                            payload: NetworkMessage::GetHeaders(
-                                GetHeadersMessage {
-                                    locator_hashes: locator_hashes,
-                                    stop_hash: stop_hash,
-                                    ..
-                                }),
-                            ..
-                        }) => {
-                            assert_eq!(locator_hashes, vec![genesis_block(Network::Regtest).header.bitcoin_hash()]);
-                            assert_eq!(stop_hash, sha256d::Hash::default());
-                        },
-                        _ => assert!(false)
-                    }
-
-                    let headers_message = RawNetworkMessage {
-                        magic: Network::Regtest.magic(),
-                        payload: NetworkMessage::Headers(get_test_headers(0, 10))
-                    };
-
-                    let _ = here.start_send(headers_message);
-                    ()
+            let blockheaderdownload = BlockHeaderDownload::new(peer, headers_for_block_header_download)
+                .map(move |_| {
+                    // test after BlockHeaderDownload future finished
+                    let headers = headers.lock().unwrap();
+                    assert_eq!(headers.len(), 11);
                 })
                 .map_err(|_| {});
 
-            tokio::spawn(test_future);
+            tokio::spawn(blockheaderdownload);
 
             Ok(())
         });
