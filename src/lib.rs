@@ -21,11 +21,11 @@ extern crate bytes;
 use crate::network::{connect, Handshake, BlockHeaderDownload};
 use bitcoin::network::constants::Network;
 use tokio::prelude::Future;
-use bitcoin::blockdata::constants::genesis_block;
-use bitcoin::BlockHeader;
 use std::sync::{Arc, Mutex};
+use crate::chain::ChainState;
 
 mod network;
+mod chain;
 
 #[cfg(test)]
 mod test_helper;
@@ -46,19 +46,19 @@ impl SPV {
     pub fn run(&self) {
         info!("start SPV node.");
 
-        let genesis = genesis_block(Network::Regtest);
-        let headers = Arc::new(Mutex::new(vec![genesis.header]));
+        let chain_state = Arc::new(Mutex::new(ChainState::new()));
 
-        let headers_for_block_header_download = headers.clone();
+        let chain_state_for_block_header_download = chain_state.clone();
 
         let connection = connect("127.0.0.1:18444", self.network)
             .and_then(|peer| Handshake::new(peer))
             .and_then(move |peer| {
-                BlockHeaderDownload::new(peer, headers_for_block_header_download)
+                BlockHeaderDownload::new(peer, chain_state_for_block_header_download)
             })
             .map(move |_peer| {
-                let headers = headers.lock().unwrap();
-                info!("block count: {}", headers.len());
+                let chain_state = chain_state.lock().unwrap();
+                let chain_active = chain_state.borrow_chain_active();
+                info!("current block height: {}", chain_active.height());
             })
             .map_err(|e| error!("Error: {:?}", e));
         tokio::run(connection);

@@ -1,15 +1,14 @@
 use crate::network::{Error, Peer};
 use bitcoin::network::message::NetworkMessage;
 use bitcoin::network::message_blockdata::GetHeadersMessage;
-use bitcoin::{network::message::RawNetworkMessage, BitcoinHash, BlockHeader, Network};
+use bitcoin::{network::message::RawNetworkMessage, BitcoinHash, Network};
 use bitcoin_hashes::sha256d;
 use std::cell::RefCell;
 use tokio::prelude::{Async, Future, Sink, Stream};
 use bitcoin::blockdata::block::LoneBlockHeader;
 use std::sync::{Arc, Mutex};
-use std::borrow::Borrow;
 use bitcoin::blockdata::constants::genesis_block;
-use bitcoin::consensus::serialize;
+use crate::chain::ChainState;
 
 pub struct BlockHeaderDownload<T>
 where
@@ -24,17 +23,15 @@ impl<T> BlockHeaderDownload<T>
 where
     T: Sink<SinkItem = RawNetworkMessage> + Stream<Item = RawNetworkMessage>,
 {
-    pub fn new(peer: Peer<T>, headers: Arc<Mutex<Vec<BlockHeader>>>) -> BlockHeaderDownload<T> {
+    pub fn new(peer: Peer<T>, chain_state: Arc<Mutex<ChainState>>) -> BlockHeaderDownload<T> {
         BlockHeaderDownload {
             peer: Some(RefCell::new(peer)),
             started: false,
-            headers_processor: HeadersProcessor { headers }
+            headers_processor: HeadersProcessor { chain_state }
         }
     }
 
     fn get_locator(&self) -> Vec<sha256d::Hash> {
-//        let headers = self.headers_processor.headers();
-        //vec![headers[0].bitcoin_hash()]
         let genesis = genesis_block(Network::Regtest);
         vec![genesis.header.bitcoin_hash()]
     }
@@ -92,16 +89,15 @@ where
 }
 
 struct HeadersProcessor {
-    pub headers: Arc<Mutex<Vec<BlockHeader>>>
+    pub chain_state: Arc<Mutex<ChainState>>
 }
-
-use hex::encode as hex_encode;
 
 impl HeadersProcessor {
     pub fn process(&mut self, headers: Vec<LoneBlockHeader>) {
         for header in headers {
-            let mut headers = self.headers.lock().unwrap();
-            headers.push(header.header);
+            let mut chain_state = self.chain_state.lock().unwrap();
+            let chain_active = chain_state.borrow_mut_chain_active();
+            let _ = chain_active.connect_block_header(header.header);
         }
     }
 }
@@ -122,8 +118,8 @@ mod tests {
                     Some(RawNetworkMessage {
                              payload: NetworkMessage::GetHeaders(
                                  GetHeadersMessage {
-                                     locator_hashes: locator_hashes,
-                                     stop_hash: stop_hash,
+                                     locator_hashes,
+                                     stop_hash,
                                      ..
                                  }),
                              ..
@@ -151,18 +147,19 @@ mod tests {
         simple_logger::init().unwrap();
         let (here, there) = channel::<RawNetworkMessage>();
         let peer = Peer::new(0, there, "0.0.0.0:0".parse().unwrap(), Network::Regtest);
-        let genesis = genesis_block(Network::Regtest);
-        let headers = Arc::new(Mutex::new(vec![genesis.header]));
-        let headers_for_block_header_download = headers.clone();
+
+        let chain_state = Arc::new(Mutex::new(ChainState::new()));
+        let chain_state_for_block_header_download = chain_state.clone();
 
         let future = tokio::prelude::future::lazy(move || {
             tokio::spawn(remote_peer(here));
 
-            let blockheaderdownload = BlockHeaderDownload::new(peer, headers_for_block_header_download)
+            let blockheaderdownload = BlockHeaderDownload::new(peer, chain_state_for_block_header_download)
                 .map(move |_| {
                     // test after BlockHeaderDownload future finished
-                    let headers = headers.lock().unwrap();
-                    assert_eq!(headers.len(), 11);
+                    let chain_state = chain_state.lock().unwrap();
+                    let chain_active = chain_state.borrow_chain_active();
+                    assert_eq!(chain_active.height(), 10);
                 })
                 .map_err(|_| {});
 
