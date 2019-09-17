@@ -1,11 +1,11 @@
-use tokio::sync::mpsc::{UnboundedSender, UnboundedReceiver};
-use tokio::prelude::*;
 use crate::network::Error;
 use bitcoin::blockdata::block::LoneBlockHeader;
-use hex::decode as hex_decode;
 use bitcoin::consensus::deserialize;
-use bitcoin::{BlockHeader, BitcoinHash};
+use bitcoin::{BitcoinHash, BlockHeader};
 use bitcoin_hashes::sha256d;
+use hex::decode as hex_decode;
+use tokio::prelude::*;
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
 /// A hundred block headers hex string.
 /// Network is regtest and start with genesis block.
@@ -120,14 +120,14 @@ pub fn get_test_block_hash(height: usize) -> sha256d::Hash {
 pub fn get_test_headers(start: usize, count: usize) -> Vec<BlockHeader> {
     get_test_lone_headers(start, count)
         .into_iter()
-        .map(|v| { v.header })
+        .map(|v| v.header)
         .collect()
 }
 
 pub fn get_test_lone_headers(start: usize, count: usize) -> Vec<LoneBlockHeader> {
     let mut result: Vec<LoneBlockHeader> = vec![];
 
-    for hex in &HEADER_STRINGS[start .. start + count] {
+    for hex in &HEADER_STRINGS[start..start + count] {
         let bytes = hex_decode(hex).unwrap();
         let header = deserialize(&bytes).unwrap();
         result.push(header);

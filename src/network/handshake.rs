@@ -79,8 +79,8 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bitcoin::network::constants::Network;
     use crate::test_helper::channel;
+    use bitcoin::network::constants::Network;
 
     #[test]
     fn handshake_test() {

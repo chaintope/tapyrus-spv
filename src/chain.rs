@@ -1,22 +1,22 @@
-use bitcoin::{BlockHeader, Network, BitcoinHash};
 use bitcoin::blockdata::constants::genesis_block;
+use bitcoin::{BitcoinHash, BlockHeader, Network};
 use bitcoin_hashes::sha256d;
 use core::cmp;
 
 pub struct Error;
 
 pub struct ChainState {
-    chain_active: Chain
+    chain_active: Chain,
 }
 
 impl ChainState {
     pub fn new() -> ChainState {
         ChainState {
-            chain_active: Chain::default()
+            chain_active: Chain::default(),
         }
     }
 
-    pub fn borrow_chain_active(& self) -> &Chain {
+    pub fn borrow_chain_active(&self) -> &Chain {
         &self.chain_active
     }
 
@@ -33,7 +33,7 @@ pub struct BlockIndex {
 
 #[derive(Debug)]
 pub struct Chain {
-    headers: Vec<BlockIndex>
+    headers: Vec<BlockIndex>,
 }
 
 impl Chain {
@@ -42,7 +42,7 @@ impl Chain {
     pub fn connect_block_header(&mut self, header: BlockHeader) -> Result<(), Error> {
         let block_index = BlockIndex {
             header,
-            height: self.height() + 1
+            height: self.height() + 1,
         };
 
         self.headers.push(block_index);
@@ -100,10 +100,10 @@ impl Default for Chain {
     fn default() -> Self {
         let index = BlockIndex {
             header: genesis_block(Network::Regtest).header,
-            height: 0
+            height: 0,
         };
         Chain {
-            headers: vec![index]
+            headers: vec![index],
         }
     }
 }
@@ -111,7 +111,7 @@ impl Default for Chain {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_helper::{get_test_headers, get_test_block_hash};
+    use crate::test_helper::{get_test_block_hash, get_test_headers};
 
     fn build_chain(height: usize) -> Chain {
         let mut chain = Chain::default();
@@ -138,7 +138,7 @@ mod tests {
         let expected: Vec<sha256d::Hash> = get_test_headers(0, 10)
             .into_iter()
             .rev()
-            .map(|v| { v.bitcoin_hash() })
+            .map(|v| v.bitcoin_hash())
             .collect();
         assert_eq!(chain.get_locator(), expected);
 
@@ -146,7 +146,9 @@ mod tests {
         let chain = build_chain(99);
         let mut expected = Vec::new();
 
-        for i in &[99, 98, 97, 96, 95, 94, 93, 92, 91, 90, 89, 88, 86, 82, 74, 58, 26, 0] {
+        for i in &[
+            99, 98, 97, 96, 95, 94, 93, 92, 91, 90, 89, 88, 86, 82, 74, 58, 26, 0,
+        ] {
             expected.push(get_test_block_hash(*i as usize));
         }
         assert_eq!(chain.get_locator(), expected);

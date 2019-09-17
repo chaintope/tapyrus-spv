@@ -18,14 +18,14 @@ extern crate tokio;
 extern crate log;
 extern crate bytes;
 
-use crate::network::{connect, Handshake, BlockHeaderDownload};
-use bitcoin::network::constants::Network;
-use tokio::prelude::Future;
-use std::sync::{Arc, Mutex};
 use crate::chain::ChainState;
+use crate::network::{connect, BlockHeaderDownload, Handshake};
+use bitcoin::network::constants::Network;
+use std::sync::{Arc, Mutex};
+use tokio::prelude::Future;
 
-mod network;
 mod chain;
+mod network;
 
 #[cfg(test)]
 mod test_helper;
