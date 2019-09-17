@@ -1,7 +1,8 @@
 use bitcoin::blockdata::constants::genesis_block;
 use bitcoin::{BitcoinHash, BlockHeader, Network};
-use bitcoin_hashes::sha256d;
+use bitcoin_hashes::{sha256d, Hash};
 use core::cmp;
+use hex;
 
 pub struct Error;
 
@@ -44,6 +45,11 @@ impl Chain {
             header,
             height: self.height() + 1,
         };
+
+        if log_enabled!(log::Level::Trace) {
+            let hash = hex::encode(block_index.header.bitcoin_hash().into_inner());
+            trace!("Connect new block to tip. height: {}, hash: {}", block_index.height, hash);
+        }
 
         self.headers.push(block_index);
         Ok(())

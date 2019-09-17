@@ -12,6 +12,9 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 use tokio::{codec::Framed, net::TcpStream, prelude::*};
+use bitcoin_hashes::sha256d;
+use bitcoin::network::message_blockdata::GetHeadersMessage;
+use crate::chain::Chain;
 
 pub struct Peer<T>
 where
@@ -55,6 +58,14 @@ where
     /// flush all queued sending messages.
     pub fn flush(&mut self) {
         let _ = self.stream.poll_complete();
+    }
+
+    /// Send getheaders message to peer.
+    pub fn send_getheaders(&mut self, chain: &Chain) {
+        let locators = chain.get_locator();
+        let stop_hash = sha256d::Hash::default();
+        let getheaders = GetHeadersMessage::new(locators, stop_hash);
+        self.start_send(NetworkMessage::GetHeaders(getheaders));
     }
 }
 
