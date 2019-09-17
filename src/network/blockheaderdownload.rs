@@ -1,13 +1,12 @@
 use crate::network::{Error, Peer};
 use bitcoin::network::message::NetworkMessage;
 use bitcoin::network::message_blockdata::GetHeadersMessage;
-use bitcoin::{network::message::RawNetworkMessage, BitcoinHash, Network};
+use bitcoin::{network::message::RawNetworkMessage};
 use bitcoin_hashes::sha256d;
 use std::cell::RefCell;
 use tokio::prelude::{Async, Future, Sink, Stream};
 use bitcoin::blockdata::block::LoneBlockHeader;
 use std::sync::{Arc, Mutex};
-use bitcoin::blockdata::constants::genesis_block;
 use crate::chain::{ChainState, Chain};
 
 pub struct BlockHeaderDownload<T>
@@ -96,7 +95,9 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_helper::{channel, get_test_headers, TwoWayChannel};
+    use crate::test_helper::{channel, TwoWayChannel, get_test_lone_headers};
+    use bitcoin::blockdata::constants::genesis_block;
+    use bitcoin::{Network, BitcoinHash};
 
     /// Build remote peer for testing BlockHeaderDownload future.
     /// Remote peer checks and responds messages from local peer.
@@ -123,7 +124,7 @@ mod tests {
 
                 let headers_message = RawNetworkMessage {
                     magic: Network::Regtest.magic(),
-                    payload: NetworkMessage::Headers(get_test_headers(0, 10))
+                    payload: NetworkMessage::Headers(get_test_lone_headers(1, 10))
                 };
 
                 let _ = here.start_send(headers_message);

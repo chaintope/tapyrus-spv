@@ -4,11 +4,14 @@ use crate::network::Error;
 use bitcoin::blockdata::block::LoneBlockHeader;
 use hex::decode as hex_decode;
 use bitcoin::consensus::deserialize;
+use bitcoin::{BlockHeader, BitcoinHash};
+use bitcoin_hashes::sha256d;
 
 /// A hundred block headers hex string.
-/// Network is regtest and start with next of genesis block.
+/// Network is regtest and start with genesis block.
 /// These headers has transaction count(it's always 00) at end for sending in headers message.
 pub static HEADER_STRINGS: [&str; 100] = [
+    "0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4adae5494dffff7f200200000000",
     "0000002006226e46111a0b59caaf126043eb5bbf28c34f3a5e332a1fc7b2b73cf188910f9ac8c52a76cecbb7e642bf3456088cf92fda32cd746364180a058640c23b6e5ae4db3f5dffff7f200100000000",
     "00000020a59485ce0c710919c8b08b6c821c3ee9c8ac9f9f4e669865b2545aec7d03357631db0c7f7d68c7c479f68a015d0817b6530e451656b524c9e9e92fad8c0fb18711dc3f5dffff7f200100000000",
     "00000020d5e3096fd8b3e62cda15efab068a03d5638dea830125401b22a449fee5642f10d5638982537da6ed5fbbc305d6fbe9939bdaadacc1e5050b4253afc5349fd94911dc3f5dffff7f200200000000",
@@ -108,10 +111,20 @@ pub static HEADER_STRINGS: [&str; 100] = [
     "000000201911ce94bf77845acba60a0ccbcc4673784a22593838e60101a0b16418349b101334b1c74fbbbbe191878a73cc5d2a8e5b106712d37378b7dd6880666f9554c541dc3f5dffff7f200000000000",
     "000000201d896e5f9f8ded05ae4e8bc277f52e9fad1954019e7b867c317c264399de207df02e8766984c4bc2ab1155a4a83c8325aeb2a854276ec40bf0bf94f50b023a0c42dc3f5dffff7f200000000000",
     "00000020bd730420cd37bd45f26f218248fea0232645a2f0a20f846f4c05a3a86b6aea2010c7a7e7741012aa8a3f7772e8bbdab53d77a5d628ba136b45b2ed374640012542dc3f5dffff7f200000000000",
-    "00000020fab7fb728c23ad706d53e861aefc2c8489e5f23480b3eb7597289f96a917bb67e303904e73934142270d97cb52b4d3ede303382b5dc775fa1de15dd3b8e146b342dc3f5dffff7f200000000000",
 ];
 
-pub fn get_test_headers(start: usize, count: usize) -> Vec<LoneBlockHeader> {
+pub fn get_test_block_hash(height: usize) -> sha256d::Hash {
+    get_test_headers(height, 1).first().unwrap().bitcoin_hash()
+}
+
+pub fn get_test_headers(start: usize, count: usize) -> Vec<BlockHeader> {
+    get_test_lone_headers(start, count)
+        .into_iter()
+        .map(|v| { v.header })
+        .collect()
+}
+
+pub fn get_test_lone_headers(start: usize, count: usize) -> Vec<LoneBlockHeader> {
     let mut result: Vec<LoneBlockHeader> = vec![];
 
     for hex in &HEADER_STRINGS[start .. start + count] {
