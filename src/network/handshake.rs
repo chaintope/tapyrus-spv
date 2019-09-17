@@ -84,7 +84,7 @@ mod tests {
 
     #[test]
     fn handshake_test() {
-        simple_logger::init().unwrap();
+        let _ = simple_logger::init();
 
         let (here, there) = channel::<RawNetworkMessage>();
 
