@@ -1,10 +1,13 @@
+use crate::chain::Chain;
 use crate::network::{codec::NetworkMessagesCodec, Error};
+use bitcoin::network::message_blockdata::GetHeadersMessage;
 use bitcoin::network::{
     address::Address,
     constants::Network,
     message::{NetworkMessage, RawNetworkMessage},
     message_network::VersionMessage,
 };
+use bitcoin_hashes::sha256d;
 use rand::{thread_rng, RngCore};
 use std::{
     borrow::BorrowMut,
@@ -12,9 +15,6 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 use tokio::{codec::Framed, net::TcpStream, prelude::*};
-use bitcoin_hashes::sha256d;
-use bitcoin::network::message_blockdata::GetHeadersMessage;
-use crate::chain::Chain;
 
 pub type PeerID = u64;
 

@@ -48,7 +48,11 @@ impl Chain {
 
         if log_enabled!(log::Level::Trace) {
             let hash = hex::encode(block_index.header.bitcoin_hash().into_inner());
-            trace!("Connect new block to tip. height: {}, hash: {}", block_index.height, hash);
+            trace!(
+                "Connect new block to tip. height: {}, hash: {}",
+                block_index.height,
+                hash
+            );
         }
 
         self.headers.push(block_index);

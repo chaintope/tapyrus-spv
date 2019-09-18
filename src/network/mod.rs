@@ -10,8 +10,8 @@ mod handshake;
 pub use handshake::Handshake;
 
 mod blockheaderdownload;
-pub use blockheaderdownload::BlockHeaderDownload;
 use crate::network::peer::PeerID;
+pub use blockheaderdownload::BlockHeaderDownload;
 
 pub mod bytes;
 pub mod codec;
