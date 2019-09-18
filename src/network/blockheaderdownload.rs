@@ -38,10 +38,14 @@ where
 
 /// Process received headers message.
 /// Return flag for whether all block headers received.
-fn process_headers<T>(peer: &mut Peer<T>, chain_active: &mut Chain, headers: Vec<LoneBlockHeader>, max_headers_results: usize) -> bool
+fn process_headers<T>(peer: &mut Peer<T>, chain_active: &mut Chain, headers: Vec<LoneBlockHeader>, max_headers_results: usize) -> Result<bool, Error>
     where
         T: Sink<SinkItem = RawNetworkMessage> + Stream<Item = RawNetworkMessage>,
 {
+    if headers.len() > max_headers_results {
+        return Err(Error::MaliciousPeer(peer.id));
+    }
+
     let all_headers_downloaded = headers.len() < max_headers_results;
 
     for header in headers {
@@ -52,7 +56,7 @@ fn process_headers<T>(peer: &mut Peer<T>, chain_active: &mut Chain, headers: Vec
         peer.send_getheaders(chain_active);
     }
 
-    all_headers_downloaded
+    Ok(all_headers_downloaded)
 }
 
 impl<T> Future for BlockHeaderDownload<T>
@@ -80,7 +84,7 @@ where
             loop {
                 match peer.poll()? {
                     Async::Ready(Some(NetworkMessage::Headers(headers))) => {
-                        done = process_headers(&mut peer, chain_active, headers, self.max_headers_results);
+                        done = process_headers(&mut peer, chain_active, headers, self.max_headers_results)?;
                     }
                     Async::Ready(None) | Async::NotReady => break,
                     Async::Ready(_) => {} // ignore other messages.
@@ -106,6 +110,23 @@ mod tests {
     use crate::test_helper::{channel, get_test_lone_headers, TwoWayChannel, get_test_headers};
     use bitcoin::blockdata::constants::genesis_block;
     use bitcoin::{BitcoinHash, Network};
+
+    #[test]
+    fn test_process_headers_fails_when_passed_over_max_headers_results() {
+        let (_here, there) = channel::<RawNetworkMessage>();
+        let mut peer = Peer::new(0, there, "0.0.0.0:0".parse().unwrap(), Network::Regtest);
+
+        let mut chain_state = ChainState::new();
+        let mut chain_active = chain_state.borrow_mut_chain_active();
+        let headers = get_test_lone_headers(1, 11);
+        let result = process_headers(&mut peer, &mut chain_active, headers, 10);
+
+        assert!(result.is_err());
+        match result {
+            Err(Error::MaliciousPeer(peer_id)) => assert_eq!(peer_id, 0),
+            _ => assert!(false),
+        }
+    }
 
     /// Build remote peer for testing BlockHeaderDownload future.
     /// Remote peer checks and responds messages from local peer.

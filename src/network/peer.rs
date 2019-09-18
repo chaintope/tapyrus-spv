@@ -16,11 +16,13 @@ use bitcoin_hashes::sha256d;
 use bitcoin::network::message_blockdata::GetHeadersMessage;
 use crate::chain::Chain;
 
+pub type PeerID = u64;
+
 pub struct Peer<T>
 where
     T: Sink<SinkItem = RawNetworkMessage> + Stream<Item = RawNetworkMessage>,
 {
-    pub id: u64,
+    pub id: PeerID,
     pub addr: SocketAddr,
     pub network: Network,
     pub stream: T,

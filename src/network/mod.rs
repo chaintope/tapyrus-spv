@@ -11,6 +11,7 @@ pub use handshake::Handshake;
 
 mod blockheaderdownload;
 pub use blockheaderdownload::BlockHeaderDownload;
+use crate::network::peer::PeerID;
 
 pub mod bytes;
 pub mod codec;
@@ -21,6 +22,7 @@ pub enum Error {
     CodecError(codec::Error),
     UnboundedSendError(tokio::sync::mpsc::error::UnboundedSendError),
     UnboundedRecvError(tokio::sync::mpsc::error::UnboundedRecvError),
+    MaliciousPeer(PeerID),
     WrongMagicBytes,
 }
 
