@@ -9,6 +9,10 @@ pub use peer::Peer;
 mod handshake;
 pub use handshake::Handshake;
 
+mod block_header_download;
+use crate::network::peer::PeerID;
+pub use block_header_download::BlockHeaderDownload;
+
 pub mod bytes;
 pub mod codec;
 
@@ -18,7 +22,15 @@ pub enum Error {
     CodecError(codec::Error),
     UnboundedSendError(tokio::sync::mpsc::error::UnboundedSendError),
     UnboundedRecvError(tokio::sync::mpsc::error::UnboundedRecvError),
+    MaliciousPeer(PeerID, MaliciousPeerCause),
     WrongMagicBytes,
+}
+
+#[derive(Debug)]
+pub enum MaliciousPeerCause {
+    /// The peer send over maximum number which is MAX_HEADERS_RESULTS of headers in single
+    /// headers message.
+    SendOverMaxHeadersResults,
 }
 
 impl From<std::io::Error> for Error {

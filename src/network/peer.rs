@@ -1,10 +1,13 @@
+use crate::chain::Chain;
 use crate::network::{codec::NetworkMessagesCodec, Error};
+use bitcoin::network::message_blockdata::GetHeadersMessage;
 use bitcoin::network::{
     address::Address,
     constants::Network,
     message::{NetworkMessage, RawNetworkMessage},
     message_network::VersionMessage,
 };
+use bitcoin_hashes::sha256d;
 use rand::{thread_rng, RngCore};
 use std::{
     borrow::BorrowMut,
@@ -13,11 +16,13 @@ use std::{
 };
 use tokio::{codec::Framed, net::TcpStream, prelude::*};
 
+pub type PeerID = u64;
+
 pub struct Peer<T>
 where
     T: Sink<SinkItem = RawNetworkMessage> + Stream<Item = RawNetworkMessage>,
 {
-    pub id: u64,
+    pub id: PeerID,
     pub addr: SocketAddr,
     pub network: Network,
     pub stream: T,
@@ -55,6 +60,14 @@ where
     /// flush all queued sending messages.
     pub fn flush(&mut self) {
         let _ = self.stream.poll_complete();
+    }
+
+    /// Send getheaders message to peer.
+    pub fn send_getheaders(&mut self, chain: &Chain) {
+        let locators = chain.get_locator();
+        let stop_hash = sha256d::Hash::default();
+        let getheaders = GetHeadersMessage::new(locators, stop_hash);
+        self.start_send(NetworkMessage::GetHeaders(getheaders));
     }
 }
 

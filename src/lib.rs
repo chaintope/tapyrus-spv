@@ -18,11 +18,17 @@ extern crate tokio;
 extern crate log;
 extern crate bytes;
 
-use crate::network::{connect, Handshake};
+use crate::chain::ChainState;
+use crate::network::{connect, BlockHeaderDownload, Handshake};
 use bitcoin::network::constants::Network;
+use std::sync::{Arc, Mutex};
 use tokio::prelude::Future;
 
+mod chain;
 mod network;
+
+#[cfg(test)]
+mod test_helper;
 
 /// SPV
 #[derive(Clone)]
@@ -40,9 +46,20 @@ impl SPV {
     pub fn run(&self) {
         info!("start SPV node.");
 
+        let chain_state = Arc::new(Mutex::new(ChainState::new()));
+
+        let chain_state_for_block_header_download = chain_state.clone();
+
         let connection = connect("127.0.0.1:18444", self.network)
             .and_then(|peer| Handshake::new(peer))
-            .map(|_peer| {})
+            .and_then(move |peer| {
+                BlockHeaderDownload::new(peer, chain_state_for_block_header_download)
+            })
+            .map(move |_peer| {
+                let chain_state = chain_state.lock().unwrap();
+                let chain_active = chain_state.borrow_chain_active();
+                info!("current block height: {}", chain_active.height());
+            })
             .map_err(|e| error!("Error: {:?}", e));
         tokio::run(connection);
     }
