@@ -9,9 +9,9 @@ pub use peer::Peer;
 mod handshake;
 pub use handshake::Handshake;
 
-mod blockheaderdownload;
+mod block_header_download;
 use crate::network::peer::PeerID;
-pub use blockheaderdownload::BlockHeaderDownload;
+pub use block_header_download::BlockHeaderDownload;
 
 pub mod bytes;
 pub mod codec;
