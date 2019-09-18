@@ -138,7 +138,7 @@ mod tests {
     }
 
     #[test]
-    fn get_locator_test() {
+    fn test_get_locator() {
         // when chain size is 1
         let chain = build_chain(0);
         assert_eq!(chain.get_locator(), vec![get_test_block_hash(0)]);

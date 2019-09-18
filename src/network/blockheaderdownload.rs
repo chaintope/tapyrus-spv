@@ -256,7 +256,7 @@ mod tests {
     }
 
     #[test]
-    fn blockheaderdownload_test() {
+    fn test_blockheaderdownload() {
         let _ = simple_logger::init();
 
         let (here, there) = channel::<RawNetworkMessage>();

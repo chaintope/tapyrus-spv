@@ -83,7 +83,7 @@ mod tests {
     use bitcoin::network::constants::Network;
 
     #[test]
-    fn handshake_test() {
+    fn test_handshake() {
         let _ = simple_logger::init();
 
         let (here, there) = channel::<RawNetworkMessage>();

@@ -50,7 +50,7 @@ mod tests {
     }
 
     #[test]
-    fn write_test() {
+    fn test_write() {
         // The capacity will be allocated larger than 32 value.
         let mut buf = bytes::BytesMut::with_capacity(10);
         let capacity = buf.capacity();
