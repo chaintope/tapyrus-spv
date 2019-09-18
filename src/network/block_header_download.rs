@@ -1,5 +1,5 @@
 use crate::chain::{Chain, ChainState};
-use crate::network::{Error, Peer};
+use crate::network::{Error, MaliciousPeerCause, Peer};
 use bitcoin::blockdata::block::LoneBlockHeader;
 use bitcoin::network::message::NetworkMessage;
 use bitcoin::network::message::RawNetworkMessage;
@@ -46,7 +46,10 @@ where
     T: Sink<SinkItem = RawNetworkMessage> + Stream<Item = RawNetworkMessage>,
 {
     if headers.len() > max_headers_results {
-        return Err(Error::MaliciousPeer(peer.id));
+        return Err(Error::MaliciousPeer(
+            peer.id,
+            MaliciousPeerCause::SendOverMaxHeadersResults,
+        ));
     }
 
     let all_headers_downloaded = headers.len() < max_headers_results;
@@ -133,7 +136,7 @@ mod tests {
 
         assert!(result.is_err());
         match result {
-            Err(Error::MaliciousPeer(peer_id)) => assert_eq!(peer_id, 0),
+            Err(Error::MaliciousPeer(peer_id, _)) => assert_eq!(peer_id, 0),
             _ => assert!(false),
         }
     }

@@ -22,8 +22,15 @@ pub enum Error {
     CodecError(codec::Error),
     UnboundedSendError(tokio::sync::mpsc::error::UnboundedSendError),
     UnboundedRecvError(tokio::sync::mpsc::error::UnboundedRecvError),
-    MaliciousPeer(PeerID),
+    MaliciousPeer(PeerID, MaliciousPeerCause),
     WrongMagicBytes,
+}
+
+#[derive(Debug)]
+pub enum MaliciousPeerCause {
+    /// The peer send over maximum number which is MAX_HEADERS_RESULTS of headers in single
+    /// headers message.
+    SendOverMaxHeadersResults,
 }
 
 impl From<std::io::Error> for Error {
