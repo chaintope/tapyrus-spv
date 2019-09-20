@@ -30,6 +30,7 @@ impl ChainState {
 pub struct BlockIndex {
     pub header: BlockHeader,
     pub height: usize,
+    pub next_block_hash: Option<sha256d::Hash>
 }
 
 #[derive(Debug)]
@@ -44,6 +45,7 @@ impl Chain {
         let block_index = BlockIndex {
             header,
             height: self.height() + 1,
+            next_block_hash: None,
         };
 
         if log_enabled!(log::Level::Trace) {
@@ -54,6 +56,9 @@ impl Chain {
                 hash
             );
         }
+
+        let mut tip = self.tip_mut();
+        tip.next_block_hash = Some(block_index.header.bitcoin_hash());
 
         self.headers.push(block_index);
         Ok(())
@@ -69,10 +74,19 @@ impl Chain {
         self.headers.get(height)
     }
 
+    fn get_mut(&mut self, height: usize) -> Option<&mut BlockIndex> {
+        self.headers.get_mut(height)
+    }
+
     /// Return latest block in this chain.
     pub fn tip(&self) -> &BlockIndex {
         // Genesis block always exist, so we can call unwrap()
         self.get(self.height()).unwrap()
+    }
+
+    fn tip_mut(&mut self) -> &mut BlockIndex {
+        // Genesis block always exist, so we can call unwrap()
+        self.get_mut(self.height()).unwrap()
     }
 
     /// Return block hash list for indicate which blocks are include in block.
@@ -111,6 +125,7 @@ impl Default for Chain {
         let index = BlockIndex {
             header: genesis_block(Network::Regtest).header,
             height: 0,
+            next_block_hash: None
         };
         Chain {
             headers: vec![index],
@@ -135,6 +150,16 @@ mod tests {
         }
 
         chain
+    }
+
+    #[test]
+    fn test_connect_block_header_set_next_block_hash() {
+        let mut chain = build_chain(0);
+        let header = get_test_headers(1, 1).pop().unwrap();
+        let hash = header.bitcoin_hash();
+
+        let _ = chain.connect_block_header(header);
+        assert_eq!(chain.get(0).unwrap().next_block_hash.unwrap(), hash);
     }
 
     #[test]
