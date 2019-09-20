@@ -3,6 +3,7 @@ use bitcoin::{BitcoinHash, BlockHeader, Network};
 use bitcoin_hashes::{sha256d, Hash};
 use core::cmp;
 use hex;
+use bitcoin::consensus::{Encoder, Encodable, Decoder, Decodable};
 
 pub struct Error;
 
@@ -29,8 +30,29 @@ impl ChainState {
 #[derive(Debug)]
 pub struct BlockIndex {
     pub header: BlockHeader,
-    pub height: usize,
-    pub next_block_hash: Option<sha256d::Hash>
+    pub height: u32,
+    pub next_blockhash: sha256d::Hash
+}
+
+impl<S: Encoder> Encodable<S> for BlockIndex {
+    #[inline]
+    fn consensus_encode(&self, s: &mut S) -> Result<(), bitcoin::consensus::encode::Error> {
+        self.header.consensus_encode(s)?;
+        self.height.consensus_encode(s)?;
+        self.next_blockhash.consensus_encode(s)?;
+        Ok(())
+    }
+}
+
+impl<D: Decoder> Decodable<D> for BlockIndex {
+    #[inline]
+    fn consensus_decode(d: &mut D) -> Result<BlockIndex, bitcoin::consensus::encode::Error> {
+        Ok(BlockIndex {
+            header: Decodable::consensus_decode(d)?,
+            height: Decodable::consensus_decode(d)?,
+            next_blockhash: Decodable::consensus_decode(d)?,
+        })
+    }
 }
 
 #[derive(Debug)]
@@ -44,8 +66,8 @@ impl Chain {
     pub fn connect_block_header(&mut self, header: BlockHeader) -> Result<(), Error> {
         let block_index = BlockIndex {
             header,
-            height: self.height() + 1,
-            next_block_hash: None,
+            height: self.height() as u32 + 1,
+            next_blockhash: sha256d::Hash::default(),
         };
 
         if log_enabled!(log::Level::Trace) {
@@ -58,7 +80,7 @@ impl Chain {
         }
 
         let mut tip = self.tip_mut();
-        tip.next_block_hash = Some(block_index.header.bitcoin_hash());
+        tip.next_blockhash = block_index.header.bitcoin_hash();
 
         self.headers.push(block_index);
         Ok(())
@@ -125,7 +147,7 @@ impl Default for Chain {
         let index = BlockIndex {
             header: genesis_block(Network::Regtest).header,
             height: 0,
-            next_block_hash: None
+            next_blockhash: sha256d::Hash::default(),
         };
         Chain {
             headers: vec![index],
@@ -137,6 +159,7 @@ impl Default for Chain {
 mod tests {
     use super::*;
     use crate::test_helper::{get_test_block_hash, get_test_headers};
+    use bitcoin::consensus::serialize;
 
     fn build_chain(height: usize) -> Chain {
         let mut chain = Chain::default();
@@ -153,13 +176,22 @@ mod tests {
     }
 
     #[test]
-    fn test_connect_block_header_set_next_block_hash() {
+    fn test_block_index_serialize() {
+        let chain = build_chain(0);
+        let index = chain.get(0).unwrap();
+        let bytes = serialize(index);
+
+        println!("{:?}", bytes);
+    }
+
+    #[test]
+    fn test_connect_block_header_set_next_blockhash() {
         let mut chain = build_chain(0);
         let header = get_test_headers(1, 1).pop().unwrap();
         let hash = header.bitcoin_hash();
 
         let _ = chain.connect_block_header(header);
-        assert_eq!(chain.get(0).unwrap().next_block_hash.unwrap(), hash);
+        assert_eq!(chain.get(0).unwrap().next_blockhash, hash);
     }
 
     #[test]
