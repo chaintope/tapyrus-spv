@@ -1,9 +1,9 @@
 use bitcoin::blockdata::constants::genesis_block;
+use bitcoin::consensus::{Decodable, Decoder, Encodable, Encoder};
 use bitcoin::{BitcoinHash, BlockHeader, Network};
 use bitcoin_hashes::{sha256d, Hash};
 use core::cmp;
 use hex;
-use bitcoin::consensus::{Encoder, Encodable, Decoder, Decodable};
 
 pub struct Error;
 
@@ -27,11 +27,11 @@ impl ChainState {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct BlockIndex {
     pub header: BlockHeader,
     pub height: u32,
-    pub next_blockhash: sha256d::Hash
+    pub next_blockhash: sha256d::Hash,
 }
 
 impl<S: Encoder> Encodable<S> for BlockIndex {

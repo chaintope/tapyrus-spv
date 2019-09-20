@@ -25,6 +25,7 @@ use std::sync::{Arc, Mutex};
 use tokio::prelude::Future;
 
 mod chain;
+mod db;
 mod network;
 
 #[cfg(test)]
