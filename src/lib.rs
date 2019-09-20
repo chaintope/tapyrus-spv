@@ -18,14 +18,13 @@ extern crate tokio;
 extern crate log;
 extern crate bytes;
 
-use crate::chain::ChainState;
+use crate::chain::Chain;
 use crate::network::{connect, BlockHeaderDownload, Handshake};
 use bitcoin::network::constants::Network;
 use std::sync::{Arc, Mutex};
 use tokio::prelude::Future;
 
 mod chain;
-mod db;
 mod network;
 
 #[cfg(test)]
@@ -63,5 +62,29 @@ impl SPV {
             })
             .map_err(|e| error!("Error: {:?}", e));
         tokio::run(connection);
+    }
+}
+
+/// Manage blockchain status
+pub struct ChainState {
+    chain_active: Chain,
+}
+
+impl ChainState {
+    /// create ChainState instance
+    pub fn new() -> ChainState {
+        ChainState {
+            chain_active: Chain::default(),
+        }
+    }
+
+    /// borrow chain_active
+    pub fn borrow_chain_active(&self) -> &Chain {
+        &self.chain_active
+    }
+
+    /// borrow mutable chain_active
+    pub fn borrow_mut_chain_active(&mut self) -> &mut Chain {
+        &mut self.chain_active
     }
 }

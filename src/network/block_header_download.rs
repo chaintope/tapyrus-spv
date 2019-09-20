@@ -1,5 +1,6 @@
-use crate::chain::{Chain, ChainState};
+use crate::chain::Chain;
 use crate::network::{Error, MaliciousPeerCause, Peer};
+use crate::ChainState;
 use bitcoin::blockdata::block::LoneBlockHeader;
 use bitcoin::network::message::NetworkMessage;
 use bitcoin::network::message::RawNetworkMessage;

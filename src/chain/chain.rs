@@ -1,59 +1,9 @@
+use crate::chain::{BlockIndex, Error};
 use bitcoin::blockdata::constants::genesis_block;
-use bitcoin::consensus::{Decodable, Decoder, Encodable, Encoder};
 use bitcoin::{BitcoinHash, BlockHeader, Network};
 use bitcoin_hashes::{sha256d, Hash};
 use core::cmp;
 use hex;
-
-pub struct Error;
-
-pub struct ChainState {
-    chain_active: Chain,
-}
-
-impl ChainState {
-    pub fn new() -> ChainState {
-        ChainState {
-            chain_active: Chain::default(),
-        }
-    }
-
-    pub fn borrow_chain_active(&self) -> &Chain {
-        &self.chain_active
-    }
-
-    pub fn borrow_mut_chain_active(&mut self) -> &mut Chain {
-        &mut self.chain_active
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct BlockIndex {
-    pub header: BlockHeader,
-    pub height: u32,
-    pub next_blockhash: sha256d::Hash,
-}
-
-impl<S: Encoder> Encodable<S> for BlockIndex {
-    #[inline]
-    fn consensus_encode(&self, s: &mut S) -> Result<(), bitcoin::consensus::encode::Error> {
-        self.header.consensus_encode(s)?;
-        self.height.consensus_encode(s)?;
-        self.next_blockhash.consensus_encode(s)?;
-        Ok(())
-    }
-}
-
-impl<D: Decoder> Decodable<D> for BlockIndex {
-    #[inline]
-    fn consensus_decode(d: &mut D) -> Result<BlockIndex, bitcoin::consensus::encode::Error> {
-        Ok(BlockIndex {
-            header: Decodable::consensus_decode(d)?,
-            height: Decodable::consensus_decode(d)?,
-            next_blockhash: Decodable::consensus_decode(d)?,
-        })
-    }
-}
 
 #[derive(Debug)]
 pub struct Chain {
