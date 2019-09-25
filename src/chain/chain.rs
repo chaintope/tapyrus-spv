@@ -1,20 +1,37 @@
-use crate::chain::store::Store;
 use crate::chain::{BlockIndex, Error};
 use bitcoin::blockdata::constants::genesis_block;
-use bitcoin::{BitcoinHash, BlockHeader, Network};
+use bitcoin::{BitcoinHash, Block, BlockHeader, Network};
 use bitcoin_hashes::{sha256d, Hash};
 use core::cmp;
 use hex;
 
 pub trait ChainStore {
+    /// Initialize chain store.
+    /// This method should be called before start to use store.
+    ///
+    /// ## implemnt
+    /// You should implement process which should be done before use store such as setting genesis
+    /// block.
+    fn initialize(&mut self, genesis: Block) {
+        if let None = self.get(0) {
+            let genesis = BlockIndex {
+                header: genesis.header,
+                height: 0,
+                next_blockhash: sha256d::Hash::default(),
+            };
+
+            self.update_tip(&genesis);
+        }
+    }
+
     /// Return height of tip.
-    fn height(&self) -> usize;
+    fn height(&self) -> i32;
 
     /// Return specific block which is indicated by height.
-    fn get(&self, height: usize) -> Option<BlockIndex>;
+    fn get(&self, height: i32) -> Option<BlockIndex>;
 
     /// Update chain tip to passed BlockIndex.
-    fn update_tip(&mut self, index: BlockIndex);
+    fn update_tip(&mut self, index: &BlockIndex);
 
     /// Return latest block in this chain.
     fn tip(&self) -> BlockIndex {
@@ -37,7 +54,7 @@ impl<T: ChainStore> Chain<T> {
     pub fn connect_block_header(&mut self, header: BlockHeader) -> Result<(), Error> {
         let block_index = BlockIndex {
             header,
-            height: self.height() as u32 + 1,
+            height: self.height() + 1,
             next_blockhash: sha256d::Hash::default(),
         };
 
@@ -50,18 +67,18 @@ impl<T: ChainStore> Chain<T> {
             );
         }
 
-        self.store.update_tip(block_index);
+        self.store.update_tip(&block_index);
 
         Ok(())
     }
 
     /// Return height of tip.
-    pub fn height(&self) -> usize {
+    pub fn height(&self) -> i32 {
         self.store.height()
     }
 
     /// Return specific block which is indicated by height.
-    pub fn get(&self, height: usize) -> Option<BlockIndex> {
+    pub fn get(&self, height: i32) -> Option<BlockIndex> {
         self.store.get(height)
     }
 
@@ -73,7 +90,7 @@ impl<T: ChainStore> Chain<T> {
 
     /// Return block hash list for indicate which blocks are include in block.
     pub fn get_locator(&self) -> Vec<sha256d::Hash> {
-        let mut step: isize = 1;
+        let mut step: i32 = 1;
         let mut have = Vec::<sha256d::Hash>::with_capacity(32);
 
         let mut index = self.tip();
@@ -86,12 +103,12 @@ impl<T: ChainStore> Chain<T> {
                 break;
             }
 
-            let height = cmp::max(index.height as isize - step, 0);
+            let height = cmp::max(index.height - step, 0);
 
             // TODO: Add implementation for forked chain.
             // Check this chain contains `index`. If it is true, update `index` like below. If it is
             // not true, we should explore ancestor block and set to 'index'.
-            index = self.get(height as usize).unwrap();
+            index = self.get(height).unwrap();
 
             if have.len() > 10 {
                 step *= 2;
@@ -107,28 +124,44 @@ pub struct OnMemoryChainStore {
 }
 
 impl ChainStore for OnMemoryChainStore {
-    fn height(&self) -> usize {
-        self.headers.len() - 1
+    fn initialize(&mut self, genesis: Block) {
+        if let None = self.get(0) {
+            let genesis = BlockIndex {
+                header: genesis.header,
+                height: 0,
+                next_blockhash: sha256d::Hash::default(),
+            };
+
+            self.headers = vec![genesis];
+        }
     }
 
-    fn get(&self, height: usize) -> Option<BlockIndex> {
-        match self.headers.get(height) {
+    fn height(&self) -> i32 {
+        self.headers.len() as i32 - 1
+    }
+
+    fn get(&self, height: i32) -> Option<BlockIndex> {
+        match self.headers.get(height as usize) {
             Some(index) => Some(index.clone()),
             None => None,
         }
     }
 
-    fn update_tip(&mut self, index: BlockIndex) {
+    fn update_tip(&mut self, index: &BlockIndex) {
         let mut tip = self.tip_mut();
         tip.next_blockhash = index.header.bitcoin_hash();
 
-        self.headers.push(index);
+        self.headers.push(index.clone());
     }
 }
 
 impl OnMemoryChainStore {
-    fn get_mut(&mut self, height: usize) -> Option<&mut BlockIndex> {
-        self.headers.get_mut(height)
+    pub fn new() -> OnMemoryChainStore {
+        OnMemoryChainStore { headers: vec![] }
+    }
+
+    fn get_mut(&mut self, height: i32) -> Option<&mut BlockIndex> {
+        self.headers.get_mut(height as usize)
     }
 
     fn tip_mut(&mut self) -> &mut BlockIndex {
@@ -137,26 +170,20 @@ impl OnMemoryChainStore {
     }
 }
 
-impl Default for Chain<OnMemoryChainStore> {
-    fn default() -> Self {
-        let index = BlockIndex {
-            header: genesis_block(Network::Regtest).header,
-            height: 0,
-            next_blockhash: sha256d::Hash::default(),
-        };
-        Chain {
-            store: OnMemoryChainStore {
-                headers: vec![index],
-            },
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::test_helper::{get_test_block_hash, get_test_headers};
     use bitcoin::consensus::serialize;
+
+    impl Default for Chain<OnMemoryChainStore> {
+        fn default() -> Self {
+            let mut store = OnMemoryChainStore::new();
+            store.initialize(genesis_block(Network::Regtest));
+
+            Chain { store }
+        }
+    }
 
     fn build_chain(height: usize) -> Chain<OnMemoryChainStore> {
         let mut chain = Chain::<OnMemoryChainStore>::default();

@@ -1,6 +1,6 @@
 mod block_index;
 mod chain;
-mod db;
+mod store;
 
 pub use block_index::BlockIndex;
 pub use chain::Chain;

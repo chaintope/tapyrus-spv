@@ -1,12 +1,23 @@
+use bitcoin::blockdata::constants::genesis_block;
 use bitcoin::consensus::{Decodable, Decoder, Encodable, Encoder};
-use bitcoin::BlockHeader;
+use bitcoin::{BlockHeader, Network};
 use bitcoin_hashes::sha256d;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct BlockIndex {
     pub header: BlockHeader,
-    pub height: u32,
+    pub height: i32,
     pub next_blockhash: sha256d::Hash,
+}
+
+impl BlockIndex {
+    pub fn genesis() -> BlockIndex {
+        BlockIndex {
+            header: genesis_block(Network::Regtest).header,
+            height: 0,
+            next_blockhash: sha256d::Hash::default(),
+        }
+    }
 }
 
 impl<S: Encoder> Encodable<S> for BlockIndex {

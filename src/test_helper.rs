@@ -1,3 +1,4 @@
+use crate::chain::BlockIndex;
 use crate::network::Error;
 use bitcoin::blockdata::block::LoneBlockHeader;
 use bitcoin::consensus::deserialize;
@@ -115,6 +116,15 @@ pub static HEADER_STRINGS: [&str; 100] = [
 
 pub fn get_test_block_hash(height: usize) -> sha256d::Hash {
     get_test_headers(height, 1).first().unwrap().bitcoin_hash()
+}
+
+pub fn get_test_block_index(height: i32) -> BlockIndex {
+    let header = get_test_headers(height as usize, 1)[0];
+    BlockIndex {
+        header,
+        height,
+        next_blockhash: Default::default(),
+    }
 }
 
 pub fn get_test_headers(start: usize, count: usize) -> Vec<BlockHeader> {
