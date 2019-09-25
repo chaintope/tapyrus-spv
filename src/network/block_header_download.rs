@@ -1,4 +1,4 @@
-use crate::chain::Chain;
+use crate::chain::{Chain, OnMemoryChainStore};
 use crate::network::{Error, MaliciousPeerCause, Peer};
 use crate::ChainState;
 use bitcoin::blockdata::block::LoneBlockHeader;
@@ -39,7 +39,7 @@ where
 /// Return flag for whether all block headers received.
 fn process_headers<T>(
     peer: &mut Peer<T>,
-    chain_active: &mut Chain,
+    chain_active: &mut Chain<OnMemoryChainStore>,
     headers: Vec<LoneBlockHeader>,
     max_headers_results: usize,
 ) -> Result<bool, Error>

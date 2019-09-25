@@ -1,4 +1,4 @@
-use crate::chain::Chain;
+use crate::chain::{Chain, OnMemoryChainStore};
 use crate::network::{codec::NetworkMessagesCodec, Error};
 use bitcoin::network::message_blockdata::GetHeadersMessage;
 use bitcoin::network::{
@@ -63,7 +63,7 @@ where
     }
 
     /// Send getheaders message to peer.
-    pub fn send_getheaders(&mut self, chain: &Chain) {
+    pub fn send_getheaders(&mut self, chain: &Chain<OnMemoryChainStore>) {
         let locators = chain.get_locator();
         let stop_hash = sha256d::Hash::default();
         let getheaders = GetHeadersMessage::new(locators, stop_hash);

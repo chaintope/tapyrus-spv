@@ -4,6 +4,8 @@ mod db;
 
 pub use block_index::BlockIndex;
 pub use chain::Chain;
+pub use chain::ChainStore;
+pub use chain::OnMemoryChainStore;
 
 #[derive(Debug)]
 pub enum Error {

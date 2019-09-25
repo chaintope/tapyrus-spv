@@ -18,7 +18,7 @@ extern crate tokio;
 extern crate log;
 extern crate bytes;
 
-use crate::chain::Chain;
+use crate::chain::{Chain, OnMemoryChainStore};
 use crate::network::{connect, BlockHeaderDownload, Handshake};
 use bitcoin::network::constants::Network;
 use std::sync::{Arc, Mutex};
@@ -67,24 +67,24 @@ impl SPV {
 
 /// Manage blockchain status
 pub struct ChainState {
-    chain_active: Chain,
+    chain_active: Chain<OnMemoryChainStore>,
 }
 
 impl ChainState {
     /// create ChainState instance
     pub fn new() -> ChainState {
         ChainState {
-            chain_active: Chain::default(),
+            chain_active: Chain::<OnMemoryChainStore>::default(),
         }
     }
 
     /// borrow chain_active
-    pub fn borrow_chain_active(&self) -> &Chain {
+    pub fn borrow_chain_active(&self) -> &Chain<OnMemoryChainStore> {
         &self.chain_active
     }
 
     /// borrow mutable chain_active
-    pub fn borrow_mut_chain_active(&mut self) -> &mut Chain {
+    pub fn borrow_mut_chain_active(&mut self) -> &mut Chain<OnMemoryChainStore> {
         &mut self.chain_active
     }
 }
