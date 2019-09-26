@@ -69,13 +69,29 @@ impl DBChainStore {
     }
 
     fn process_update_tip(&self, index: &BlockIndex) -> Result<(), Error> {
+        let mut batch = WriteBatch::default();
+
+        // update prev tip
+        match self.get_tip()? {
+            Some(mut prev) => {
+                prev.next_blockhash = index.header.bitcoin_hash();
+
+                let ser_hash = serialize(&prev.header.bitcoin_hash());
+                let ser_index = serialize(&prev);
+                batch.put(entry_key(&prev.header.bitcoin_hash()), &ser_index)?;
+                batch.put(height_key(prev.height), &ser_hash)?;
+            }
+            None => {}
+        };
+
+        // put new tip
         let ser_hash = serialize(&index.header.bitcoin_hash());
         let ser_index = serialize(index);
 
-        let mut batch = WriteBatch::default();
         batch.put(entry_key(&index.header.bitcoin_hash()), &ser_index)?;
         batch.put(height_key(index.height), &ser_hash)?;
         batch.put(tip_key(), &ser_hash)?;
+
         self.db.write(batch)?;
 
         Ok(())
@@ -158,7 +174,9 @@ mod tests {
             assert_eq!(store.tip(), get_test_block_index(10));
 
             // test get()
-            assert_eq!(store.get(3), Some(get_test_block_index(3)));
+            let mut expected = get_test_block_index(3);
+            expected.next_blockhash = get_test_block_index(4).header.bitcoin_hash();
+            assert_eq!(store.get(3), Some(expected));
         }
         let _ = rocksdb::DB::destroy(&Options::default(), &path);
     }
