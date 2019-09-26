@@ -179,7 +179,7 @@ impl OnMemoryChainStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_helper::{get_test_block_hash, get_test_headers};
+    use crate::test_helper::{get_test_block_hash, get_test_headers, get_test_block_index};
     use bitcoin::consensus::serialize;
 
     impl Default for Chain<OnMemoryChainStore> {
@@ -249,5 +249,31 @@ mod tests {
             expected.push(get_test_block_hash(*i as usize));
         }
         assert_eq!(chain.get_locator(), expected);
+    }
+
+    #[test]
+    fn test_store() {
+        let mut store = OnMemoryChainStore::new();
+        store.initialize(genesis_block(Network::Regtest));
+
+        assert!(store.get(0).is_some());
+        assert_eq!(store.height(), 0);
+
+        // test update_tip
+        store.update_tip(&get_test_block_index(1));
+        assert_eq!(store.height(), 1);
+        assert_eq!(store.tip(), get_test_block_index(1));
+
+        // update tip to 10
+        for i in 2..11 {
+            store.update_tip(&get_test_block_index(i));
+        }
+        assert_eq!(store.height(), 10);
+        assert_eq!(store.tip(), get_test_block_index(10));
+
+        // test get()
+        let mut expected = get_test_block_index(3);
+        expected.next_blockhash = get_test_block_index(4).header.bitcoin_hash();
+        assert_eq!(store.get(3), Some(expected));
     }
 }
