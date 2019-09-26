@@ -7,6 +7,8 @@ pipelines:
           - cargo
           - rust-target
         script:
+          - apt-get update
+          - apt-get install -y clang
           - echo "Setup git with read/write access" ; ./scripts/setup-git.sh
           - echo "Build project"                    ; cargo build --release
           - echo "Format source code"               ; ./scripts/fmt.sh
@@ -21,6 +23,8 @@ pipelines:
             - cargo
             - rust-target
           script:
+            - apt-get update
+            - apt-get install -y clang
             - echo "Setup git with read/write access" ; ./scripts/setup-git.sh
             - echo "Build project"                    ; cargo build --release
             - echo "Format source code"               ; ./scripts/fmt.sh
