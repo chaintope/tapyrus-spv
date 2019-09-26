@@ -122,7 +122,9 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_helper::{channel, get_test_headers, get_test_lone_headers, TwoWayChannel};
+    use crate::test_helper::{
+        channel, get_chain, get_test_headers, get_test_lone_headers, TwoWayChannel,
+    };
     use bitcoin::blockdata::constants::genesis_block;
     use bitcoin::network::message_blockdata::GetHeadersMessage;
     use bitcoin::{BitcoinHash, Network};
@@ -133,7 +135,7 @@ mod tests {
         let (_here, there) = channel::<RawNetworkMessage>();
         let mut peer = Peer::new(0, there, "0.0.0.0:0".parse().unwrap(), Network::Regtest);
 
-        let mut chain_state = ChainState::new();
+        let mut chain_state = ChainState::new(get_chain());
         let mut chain_active = chain_state.borrow_mut_chain_active();
         let headers = get_test_lone_headers(1, 11);
         let result = process_headers(&mut peer, &mut chain_active, headers, 10);
@@ -269,7 +271,7 @@ mod tests {
         let (here, there) = channel::<RawNetworkMessage>();
         let peer = Peer::new(0, there, "0.0.0.0:0".parse().unwrap(), Network::Regtest);
 
-        let chain_state = Arc::new(Mutex::new(ChainState::new()));
+        let chain_state = Arc::new(Mutex::new(ChainState::new(get_chain())));
         let chain_state_for_block_header_download = chain_state.clone();
 
         let future = tokio::prelude::future::lazy(move || {

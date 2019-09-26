@@ -179,7 +179,7 @@ impl OnMemoryChainStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_helper::{get_test_block_hash, get_test_headers, get_test_block_index};
+    use crate::test_helper::{get_test_block_hash, get_test_block_index, get_test_headers};
     use bitcoin::consensus::serialize;
 
     impl Default for Chain<OnMemoryChainStore> {
