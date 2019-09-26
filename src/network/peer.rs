@@ -97,12 +97,10 @@ where
 }
 
 pub fn connect(
-    address: &str,
+    address: &SocketAddr,
     network: Network,
 ) -> impl Future<Item = Peer<Framed<TcpStream, NetworkMessagesCodec>>, Error = Error> {
-    let socketaddr = address.parse().unwrap();
-
-    TcpStream::connect(&socketaddr)
+    TcpStream::connect(address)
         .map(move |stream| {
             let addr = stream.peer_addr().unwrap();
             let stream = Framed::new(stream, NetworkMessagesCodec::new());
