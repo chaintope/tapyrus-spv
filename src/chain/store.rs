@@ -42,7 +42,7 @@ impl ChainStore for DBChainStore {
     }
 
     fn get(&self, height: i32) -> Option<BlockIndex> {
-        match self.process_get(height) {
+        match self.get_by_height(height) {
             Ok(r) => r,
             Err(e) => panic!("{:?}", e),
         }
@@ -109,7 +109,7 @@ impl DBChainStore {
     }
 
     /// Get BlockIndex from block height.
-    fn process_get(&self, height: i32) -> Result<Option<BlockIndex>, Error> {
+    fn get_by_height(&self, height: i32) -> Result<Option<BlockIndex>, Error> {
         let value = self.db.get(height_key(height))?;
 
         if value.is_none() {
