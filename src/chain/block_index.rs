@@ -10,16 +10,6 @@ pub struct BlockIndex {
     pub next_blockhash: sha256d::Hash,
 }
 
-impl BlockIndex {
-    pub fn genesis() -> BlockIndex {
-        BlockIndex {
-            header: genesis_block(Network::Regtest).header,
-            height: 0,
-            next_blockhash: sha256d::Hash::default(),
-        }
-    }
-}
-
 impl<S: Encoder> Encodable<S> for BlockIndex {
     #[inline]
     fn consensus_encode(&self, s: &mut S) -> Result<(), bitcoin::consensus::encode::Error> {
