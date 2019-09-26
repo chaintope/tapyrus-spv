@@ -18,8 +18,10 @@ extern crate tokio;
 extern crate log;
 extern crate bytes;
 
-use crate::chain::{Chain, OnMemoryChainStore};
+use crate::chain::store::DBChainStore;
+use crate::chain::{Chain, ChainStore, OnMemoryChainStore};
 use crate::network::{connect, BlockHeaderDownload, Handshake};
+use bitcoin::blockdata::constants::genesis_block;
 use bitcoin::network::constants::Network;
 use std::sync::{Arc, Mutex};
 use tokio::prelude::Future;
@@ -66,25 +68,33 @@ impl SPV {
 }
 
 /// Manage blockchain status
-pub struct ChainState {
-    chain_active: Chain<OnMemoryChainStore>,
+pub struct ChainState<T: ChainStore> {
+    chain_active: Chain<T>,
 }
 
-impl ChainState {
+impl ChainState<DBChainStore> {
     /// create ChainState instance
-    pub fn new() -> ChainState {
+    pub fn new() -> ChainState<DBChainStore> {
+        let datadir_path = "/tmp/spv";
+        let db = rocksdb::DB::open_default(&datadir_path).unwrap();
+
+        let mut chain_store = DBChainStore::new(db);
+        chain_store.initialize(genesis_block(Network::Regtest));
+
         ChainState {
-            chain_active: Chain::<OnMemoryChainStore>::default(),
+            chain_active: Chain::new(chain_store),
         }
     }
+}
 
+impl<T: ChainStore> ChainState<T> {
     /// borrow chain_active
-    pub fn borrow_chain_active(&self) -> &Chain<OnMemoryChainStore> {
+    pub fn borrow_chain_active(&self) -> &Chain<T> {
         &self.chain_active
     }
 
     /// borrow mutable chain_active
-    pub fn borrow_mut_chain_active(&mut self) -> &mut Chain<OnMemoryChainStore> {
+    pub fn borrow_mut_chain_active(&mut self) -> &mut Chain<T> {
         &mut self.chain_active
     }
 }

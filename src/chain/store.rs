@@ -57,7 +57,7 @@ impl ChainStore for DBChainStore {
     fn tip(&self) -> BlockIndex {
         match self.get_tip() {
             Ok(Some(index)) => index,
-            Ok(None) => panic!("Tip block should be set before use Store"),
+            Ok(None) => panic!("Tip block should be set with initialize() method before use Store"),
             Err(e) => panic!("{:?}", e),
         }
     }

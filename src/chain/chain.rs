@@ -49,6 +49,12 @@ where
 }
 
 impl<T: ChainStore> Chain<T> {
+    pub fn new(store: T) -> Chain<T> {
+        Chain { store }
+    }
+}
+
+impl<T: ChainStore> Chain<T> {
     // validate block header and connect to chain tip.
     // TODO: implement validation
     pub fn connect_block_header(&mut self, header: BlockHeader) -> Result<(), Error> {

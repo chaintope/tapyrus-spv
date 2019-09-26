@@ -1,4 +1,4 @@
-use crate::chain::{Chain, OnMemoryChainStore};
+use crate::chain::{Chain, ChainStore, OnMemoryChainStore};
 use crate::network::{Error, MaliciousPeerCause, Peer};
 use crate::ChainState;
 use bitcoin::blockdata::block::LoneBlockHeader;
@@ -11,21 +11,23 @@ use tokio::prelude::{Async, Future, Sink, Stream};
 /// The maximum number of block headers that can be in a single headers message.
 pub const MAX_HEADERS_RESULTS: usize = 2_000;
 
-pub struct BlockHeaderDownload<T>
+pub struct BlockHeaderDownload<T, S>
 where
     T: Sink<SinkItem = RawNetworkMessage> + Stream<Item = RawNetworkMessage>,
+    S: ChainStore,
 {
     peer: Option<RefCell<Peer<T>>>,
     started: bool,
-    chain_state: Arc<Mutex<ChainState>>,
+    chain_state: Arc<Mutex<ChainState<S>>>,
     max_headers_results: usize,
 }
 
-impl<T> BlockHeaderDownload<T>
+impl<T, S> BlockHeaderDownload<T, S>
 where
     T: Sink<SinkItem = RawNetworkMessage> + Stream<Item = RawNetworkMessage>,
+    S: ChainStore,
 {
-    pub fn new(peer: Peer<T>, chain_state: Arc<Mutex<ChainState>>) -> BlockHeaderDownload<T> {
+    pub fn new(peer: Peer<T>, chain_state: Arc<Mutex<ChainState<S>>>) -> BlockHeaderDownload<T, S> {
         BlockHeaderDownload {
             peer: Some(RefCell::new(peer)),
             started: false,
@@ -37,9 +39,9 @@ where
 
 /// Process received headers message.
 /// Return flag for whether all block headers received.
-fn process_headers<T>(
+fn process_headers<T, S: ChainStore>(
     peer: &mut Peer<T>,
-    chain_active: &mut Chain<OnMemoryChainStore>,
+    chain_active: &mut Chain<S>,
     headers: Vec<LoneBlockHeader>,
     max_headers_results: usize,
 ) -> Result<bool, Error>
@@ -66,9 +68,10 @@ where
     Ok(all_headers_downloaded)
 }
 
-impl<T> Future for BlockHeaderDownload<T>
+impl<T, S> Future for BlockHeaderDownload<T, S>
 where
     T: Sink<SinkItem = RawNetworkMessage> + Stream<Item = RawNetworkMessage>,
+    S: ChainStore,
     Error: From<T::Error>,
 {
     type Item = Peer<T>;
