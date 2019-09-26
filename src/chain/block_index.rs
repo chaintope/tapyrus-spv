@@ -30,3 +30,27 @@ impl<D: Decoder> Decodable<D> for BlockIndex {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_helper::get_test_block_index;
+    use bitcoin::consensus::{deserialize, serialize};
+
+    const SERIALIZED_GENESIS_BLOCK_INDEX: &str = "0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4adae5494dffff7f2002000000000000000000000000000000000000000000000000000000000000000000000000000000";
+
+    #[test]
+    fn test_encode() {
+        let index = get_test_block_index(0);
+        let expected = hex::decode(SERIALIZED_GENESIS_BLOCK_INDEX).unwrap();
+        assert_eq!(serialize(&index), expected);
+    }
+
+    #[test]
+    fn test_decode() {
+        let index: BlockIndex =
+            deserialize(&hex::decode(SERIALIZED_GENESIS_BLOCK_INDEX).unwrap()).unwrap();
+        let expected = get_test_block_index(0);
+        assert_eq!(index, expected);
+    }
+}
