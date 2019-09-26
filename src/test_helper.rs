@@ -1,4 +1,5 @@
-use crate::chain::{BlockIndex, Chain, ChainStore, OnMemoryChainStore};
+use crate::chain::store::OnMemoryChainStore;
+use crate::chain::{BlockIndex, Chain, ChainStore};
 use crate::network::Error;
 use bitcoin::blockdata::block::LoneBlockHeader;
 use bitcoin::blockdata::constants::genesis_block;

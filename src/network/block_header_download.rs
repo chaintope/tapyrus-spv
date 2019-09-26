@@ -1,5 +1,5 @@
-use crate::chain::{Chain, ChainStore, OnMemoryChainStore};
-use crate::network::{Error, MaliciousPeerCause, Peer};
+use crate::chain::{Chain, ChainStore};
+use crate::network::{error::MaliciousPeerCause, Error, Peer};
 use crate::ChainState;
 use bitcoin::blockdata::block::LoneBlockHeader;
 use bitcoin::network::message::NetworkMessage;

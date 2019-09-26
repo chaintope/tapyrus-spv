@@ -1,11 +1,13 @@
 use crate::chain::{BlockIndex, ChainStore, Error};
-use bitcoin::blockdata::constants::genesis_block;
 use bitcoin::consensus::{deserialize, serialize};
-use bitcoin::{BitcoinHash, Block, Network};
+use bitcoin::BitcoinHash;
 use bitcoin_hashes::{sha256d, Hash};
 use rocksdb::WriteBatch;
 
 /// BlockIndex Database
+/// You can persist block headers storing it into storage with RocksDB. It only deal with only
+/// single chain so far. If you try to store another fork chain into same DB, the DB indexes are
+/// going to be broken.
 #[derive(Debug)]
 pub struct DBChainStore {
     db: rocksdb::DB,
@@ -138,7 +140,6 @@ mod tests {
     use crate::test_helper::{get_test_block_hash, get_test_block_index};
     use bitcoin::blockdata::constants::genesis_block;
     use bitcoin::Network;
-    use bitcoin_hashes::sha256d;
     use rand::Rng;
     use rocksdb::Options;
 

@@ -3,56 +3,17 @@
 //! The `network` module contains p2p communication functionality.
 
 mod peer;
-pub use peer::connect;
-pub use peer::Peer;
+pub use self::peer::connect;
+pub use self::peer::Peer;
 
 mod handshake;
-pub use handshake::Handshake;
+pub use self::handshake::Handshake;
 
 mod block_header_download;
-use crate::network::peer::PeerID;
-pub use block_header_download::BlockHeaderDownload;
+pub use self::block_header_download::BlockHeaderDownload;
 
-pub mod bytes;
-pub mod codec;
+pub mod utils;
 
-#[derive(Debug)]
-pub enum Error {
-    IoError(std::io::Error),
-    CodecError(codec::Error),
-    UnboundedSendError(tokio::sync::mpsc::error::UnboundedSendError),
-    UnboundedRecvError(tokio::sync::mpsc::error::UnboundedRecvError),
-    MaliciousPeer(PeerID, MaliciousPeerCause),
-    WrongMagicBytes,
-}
-
-#[derive(Debug)]
-pub enum MaliciousPeerCause {
-    /// The peer send over maximum number which is MAX_HEADERS_RESULTS of headers in single
-    /// headers message.
-    SendOverMaxHeadersResults,
-}
-
-impl From<std::io::Error> for Error {
-    fn from(e: std::io::Error) -> Error {
-        Error::IoError(e)
-    }
-}
-
-impl From<codec::Error> for Error {
-    fn from(e: codec::Error) -> Error {
-        Error::CodecError(e)
-    }
-}
-
-impl From<tokio::sync::mpsc::error::UnboundedSendError> for Error {
-    fn from(e: tokio::sync::mpsc::error::UnboundedSendError) -> Error {
-        Error::UnboundedSendError(e)
-    }
-}
-
-impl From<tokio::sync::mpsc::error::UnboundedRecvError> for Error {
-    fn from(e: tokio::sync::mpsc::error::UnboundedRecvError) -> Error {
-        Error::UnboundedRecvError(e)
-    }
-}
+mod error;
+pub use self::error::Error;
+pub use self::error::MaliciousPeerCause;

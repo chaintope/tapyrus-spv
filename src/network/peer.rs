@@ -1,5 +1,5 @@
-use crate::chain::{Chain, ChainStore, OnMemoryChainStore};
-use crate::network::{codec::NetworkMessagesCodec, Error};
+use crate::chain::{Chain, ChainStore};
+use crate::network::{utils::codec::NetworkMessagesCodec, Error};
 use bitcoin::network::message_blockdata::GetHeadersMessage;
 use bitcoin::network::{
     address::Address,

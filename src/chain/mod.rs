@@ -1,3 +1,8 @@
+//! # Chain module
+//!
+//! This is a module for storing chains which is consisted of block headers and provide useful API
+//! to access block headers in the chain.
+
 mod block_index;
 mod chain;
 pub mod store;
@@ -5,7 +10,6 @@ pub mod store;
 pub use block_index::BlockIndex;
 pub use chain::Chain;
 pub use chain::ChainStore;
-pub use chain::OnMemoryChainStore;
 
 #[derive(Debug)]
 pub enum Error {
