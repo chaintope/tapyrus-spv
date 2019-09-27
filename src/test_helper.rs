@@ -1,7 +1,9 @@
+use crate::chain::{BlockIndex, Chain, ChainStore, OnMemoryChainStore};
 use crate::network::Error;
 use bitcoin::blockdata::block::LoneBlockHeader;
+use bitcoin::blockdata::constants::genesis_block;
 use bitcoin::consensus::deserialize;
-use bitcoin::{BitcoinHash, BlockHeader};
+use bitcoin::{BitcoinHash, BlockHeader, Network};
 use bitcoin_hashes::sha256d;
 use hex::decode as hex_decode;
 use tokio::prelude::*;
@@ -117,6 +119,15 @@ pub fn get_test_block_hash(height: usize) -> sha256d::Hash {
     get_test_headers(height, 1).first().unwrap().bitcoin_hash()
 }
 
+pub fn get_test_block_index(height: i32) -> BlockIndex {
+    let header = get_test_headers(height as usize, 1)[0];
+    BlockIndex {
+        header,
+        height,
+        next_blockhash: Default::default(),
+    }
+}
+
 pub fn get_test_headers(start: usize, count: usize) -> Vec<BlockHeader> {
     get_test_lone_headers(start, count)
         .into_iter()
@@ -134,6 +145,13 @@ pub fn get_test_lone_headers(start: usize, count: usize) -> Vec<LoneBlockHeader>
     }
 
     result
+}
+
+// return initialized chain
+pub fn get_chain() -> Chain<OnMemoryChainStore> {
+    let mut store = OnMemoryChainStore::new();
+    store.initialize(genesis_block(Network::Regtest));
+    Chain::new(store)
 }
 
 pub struct TwoWayChannel<T> {

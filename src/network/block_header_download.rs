@@ -1,5 +1,6 @@
-use crate::chain::{Chain, ChainState};
+use crate::chain::{Chain, ChainStore, OnMemoryChainStore};
 use crate::network::{Error, MaliciousPeerCause, Peer};
+use crate::ChainState;
 use bitcoin::blockdata::block::LoneBlockHeader;
 use bitcoin::network::message::NetworkMessage;
 use bitcoin::network::message::RawNetworkMessage;
@@ -10,21 +11,23 @@ use tokio::prelude::{Async, Future, Sink, Stream};
 /// The maximum number of block headers that can be in a single headers message.
 pub const MAX_HEADERS_RESULTS: usize = 2_000;
 
-pub struct BlockHeaderDownload<T>
+pub struct BlockHeaderDownload<T, S>
 where
     T: Sink<SinkItem = RawNetworkMessage> + Stream<Item = RawNetworkMessage>,
+    S: ChainStore,
 {
     peer: Option<RefCell<Peer<T>>>,
     started: bool,
-    chain_state: Arc<Mutex<ChainState>>,
+    chain_state: Arc<Mutex<ChainState<S>>>,
     max_headers_results: usize,
 }
 
-impl<T> BlockHeaderDownload<T>
+impl<T, S> BlockHeaderDownload<T, S>
 where
     T: Sink<SinkItem = RawNetworkMessage> + Stream<Item = RawNetworkMessage>,
+    S: ChainStore,
 {
-    pub fn new(peer: Peer<T>, chain_state: Arc<Mutex<ChainState>>) -> BlockHeaderDownload<T> {
+    pub fn new(peer: Peer<T>, chain_state: Arc<Mutex<ChainState<S>>>) -> BlockHeaderDownload<T, S> {
         BlockHeaderDownload {
             peer: Some(RefCell::new(peer)),
             started: false,
@@ -36,9 +39,9 @@ where
 
 /// Process received headers message.
 /// Return flag for whether all block headers received.
-fn process_headers<T>(
+fn process_headers<T, S: ChainStore>(
     peer: &mut Peer<T>,
-    chain_active: &mut Chain,
+    chain_active: &mut Chain<S>,
     headers: Vec<LoneBlockHeader>,
     max_headers_results: usize,
 ) -> Result<bool, Error>
@@ -65,9 +68,10 @@ where
     Ok(all_headers_downloaded)
 }
 
-impl<T> Future for BlockHeaderDownload<T>
+impl<T, S> Future for BlockHeaderDownload<T, S>
 where
     T: Sink<SinkItem = RawNetworkMessage> + Stream<Item = RawNetworkMessage>,
+    S: ChainStore,
     Error: From<T::Error>,
 {
     type Item = Peer<T>;
@@ -118,7 +122,9 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_helper::{channel, get_test_headers, get_test_lone_headers, TwoWayChannel};
+    use crate::test_helper::{
+        channel, get_chain, get_test_headers, get_test_lone_headers, TwoWayChannel,
+    };
     use bitcoin::blockdata::constants::genesis_block;
     use bitcoin::network::message_blockdata::GetHeadersMessage;
     use bitcoin::{BitcoinHash, Network};
@@ -129,7 +135,7 @@ mod tests {
         let (_here, there) = channel::<RawNetworkMessage>();
         let mut peer = Peer::new(0, there, "0.0.0.0:0".parse().unwrap(), Network::Regtest);
 
-        let mut chain_state = ChainState::new();
+        let mut chain_state = ChainState::new(get_chain());
         let mut chain_active = chain_state.borrow_mut_chain_active();
         let headers = get_test_lone_headers(1, 11);
         let result = process_headers(&mut peer, &mut chain_active, headers, 10);
@@ -265,7 +271,7 @@ mod tests {
         let (here, there) = channel::<RawNetworkMessage>();
         let peer = Peer::new(0, there, "0.0.0.0:0".parse().unwrap(), Network::Regtest);
 
-        let chain_state = Arc::new(Mutex::new(ChainState::new()));
+        let chain_state = Arc::new(Mutex::new(ChainState::new(get_chain())));
         let chain_state_for_block_header_download = chain_state.clone();
 
         let future = tokio::prelude::future::lazy(move || {
