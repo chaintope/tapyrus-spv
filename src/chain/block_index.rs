@@ -3,6 +3,8 @@ use bitcoin::consensus::{Decodable, Decoder, Encodable, Encoder};
 use bitcoin::{BlockHeader, Network};
 use bitcoin_hashes::sha256d;
 
+/// This struct is a index of block header. It has not only block header but also meta data like
+/// 'height', 'next_blockhash' for that.
 #[derive(Debug, Clone, PartialEq)]
 pub struct BlockIndex {
     pub header: BlockHeader,

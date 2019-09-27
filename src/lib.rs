@@ -19,7 +19,7 @@ extern crate log;
 extern crate bytes;
 
 use crate::chain::store::DBChainStore;
-use crate::chain::{Chain, ChainStore, OnMemoryChainStore};
+use crate::chain::{Chain, ChainStore};
 use crate::network::{connect, BlockHeaderDownload, Handshake};
 use bitcoin::blockdata::constants::genesis_block;
 use bitcoin::network::constants::Network;
