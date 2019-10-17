@@ -4,6 +4,14 @@ version = "0.1.0"
 authors = ["Kohei Taniguchi <kohei@chaintope.com>"]
 edition = "2018"
 
+[target.'cfg(target_os="android")'.dependencies]
+jni = { version = "0.12.3", default-features = false }
+
+[lib]
+name = "tapyrus_spv"
+path = "src/lib.rs"
+crate-type=["lib", "cdylib", "staticlib"]
+
 [dependencies]
 bitcoin = "0.18.0"
 bitcoin_hashes = "0.3"
@@ -13,4 +21,4 @@ tokio = "0.1.22"
 rand = "0.7.0"
 bytes = "0.4.12"
 hex = "0.3.2"
-rocksdb = "0.12.3"
+rocksdb = { git = "https://github.com/rust-rocksdb/rust-rocksdb.git", branch = "master" }
