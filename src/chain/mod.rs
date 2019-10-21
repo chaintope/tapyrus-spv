@@ -17,15 +17,8 @@ pub use chain::ChainStore;
 
 #[derive(Debug)]
 pub enum Error {
-    RocksDBError(rocksdb::Error),
     EncodeError(bitcoin::consensus::encode::Error),
     BitcoinHashesError(bitcoin_hashes::Error),
-}
-
-impl From<rocksdb::Error> for Error {
-    fn from(e: rocksdb::Error) -> Error {
-        Error::RocksDBError(e)
-    }
 }
 
 impl From<bitcoin::consensus::encode::Error> for Error {

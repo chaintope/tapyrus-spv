@@ -21,4 +21,3 @@ tokio = "0.1.22"
 rand = "0.7.0"
 bytes = "0.4.12"
 hex = "0.3.2"
-rocksdb = { git = "https://github.com/rust-rocksdb/rust-rocksdb.git", branch = "master" }

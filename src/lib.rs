@@ -21,7 +21,7 @@ extern crate tokio;
 extern crate log;
 extern crate bytes;
 
-use crate::chain::store::DBChainStore;
+use crate::chain::store::OnMemoryChainStore;
 use crate::chain::{Chain, ChainStore};
 use crate::network::{connect, BlockHeaderDownload, Handshake};
 use bitcoin::blockdata::constants::genesis_block;
@@ -61,8 +61,7 @@ impl SPV {
             self.options.remote
         ));
 
-        let db = rocksdb::DB::open_default(&datadir_path).unwrap();
-        let mut chain_store = DBChainStore::new(db);
+        let mut chain_store = OnMemoryChainStore::new();
         chain_store.initialize(self.options.chain_params.genesis());
         let chain_active = Chain::new(chain_store);
         let chain_state = Arc::new(Mutex::new(ChainState::new(chain_active)));
@@ -89,7 +88,7 @@ pub struct ChainState<T: ChainStore> {
     chain_active: Chain<T>,
 }
 
-impl ChainState<DBChainStore> {
+impl ChainState<OnMemoryChainStore> {
     /// create ChainState instance
     pub fn new<T: ChainStore>(chain_active: Chain<T>) -> ChainState<T> {
         ChainState { chain_active }
@@ -159,7 +158,7 @@ pub mod android {
     use self::jni::sys::{jstring};
 
     #[no_mangle]
-    pub unsafe extern fn Java_com_mozilla_greetings_RustGreetings_greeting(env: JNIEnv, _: JClass, java_pattern: JString) -> jstring {
+    pub unsafe extern fn Java_com_chaintope_tapyrus_spv_RustGreetings_greeting(env: JNIEnv, _: JClass, java_pattern: JString) -> jstring {
         // Our Java companion code might pass-in "world" as a string, hence the name.
         let world = rust_greeting(env.get_string(java_pattern).expect("invalid pattern string").as_ptr());
         // Retake pointer so that we can use it below and allow memory to be freed when it goes out of scope.
