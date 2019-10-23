@@ -3,6 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 extern crate jni;
+extern crate android_logger;
 
 use super::*;
 use self::jni::JNIEnv;
@@ -10,6 +11,22 @@ use self::jni::objects::{JClass, JString};
 use self::jni::sys::{jstring};
 use crate::ffi::c::rust_greeting;
 use std::ffi::CString;
+use log::Level;
+use crate::{Options, ChainParams, SPV};
+use android_logger::{Config, FilterBuilder};
+
+fn native_activity_create() {
+    android_logger::init_once(
+        Config::default()
+            .with_min_level(Level::Trace) // limit log level
+            .with_tag("libtapyrus_spv")
+            .with_filter( // configure messages for specific crate
+                          FilterBuilder::new()
+                              .parse("error,tapyrus_spv=trace")
+                              .build())
+    );
+}
+
 
 #[no_mangle]
 pub unsafe extern fn Java_com_chaintope_tapyrus_spv_RustGreetings_greeting(env: JNIEnv, _: JClass, java_pattern: JString) -> jstring {

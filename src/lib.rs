@@ -57,10 +57,11 @@ impl SPV {
 
     /// run spv node.
     pub fn run(&self) {
-        info!("start SPV node.");
+        info!("Start SPV node.");
 
         // initialize chain_state
         let datadir_path = Path::new(&self.options.datadir);
+        info!("datadir is {}", datadir_path.display());
         let remote_socket_addr = self.options.remote.parse().expect(&format!(
             "Can not parse remote peer address: \"{}\"",
             self.options.remote
@@ -73,6 +74,7 @@ impl SPV {
 
         let chain_state_for_block_header_download = chain_state.clone();
 
+        info!("Connect to remote peer {}. Network is {}.", remote_socket_addr, self.options.chain_params.network);
         let connection = connect(&remote_socket_addr, self.options.chain_params.network)
             .and_then(|peer| Handshake::new(peer))
             .and_then(move |peer| {
