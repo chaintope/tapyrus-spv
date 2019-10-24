@@ -40,16 +40,5 @@ pub unsafe extern fn Java_com_chaintope_tapyrus_spv_RustGreetings_greeting(env: 
     let world_ptr = CString::from_raw(world);
     let output = env.new_string(world_ptr.to_str().unwrap()).expect("Couldn't create java string!");
 
-    let params = Options {
-        remote: "192.168.0.44:18444".to_string(),
-        datadir: "/tmp/tapyrus-spv".to_string(),
-        chain_params: ChainParams {
-            network: Network::Regtest,
-        },
-    };
-
-    let spv = SPV::new(params);
-    spv.run();
-
     output.into_inner()
 }
