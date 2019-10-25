@@ -2,9 +2,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-use bitcoin::blockdata::constants::genesis_block;
 use bitcoin::consensus::{Decodable, Decoder, Encodable, Encoder};
-use bitcoin::{BlockHeader, Network};
+use bitcoin::BlockHeader;
 use bitcoin_hashes::sha256d;
 
 /// This struct is a index of block header. It has not only block header but also meta data like

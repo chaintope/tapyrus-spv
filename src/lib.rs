@@ -7,13 +7,12 @@
 //!
 //!
 
-//#![deny(non_upper_case_globals)]
-//#![deny(non_camel_case_types)]
-//#![deny(non_snake_case)]
-//#![deny(unused_mut)]
-//#![deny(missing_docs)]
-//#![deny(unused_must_use)]
-//#![forbid(unsafe_code)]
+#![deny(non_upper_case_globals)]
+#![deny(non_camel_case_types)]
+#![deny(non_snake_case)]
+#![deny(unused_mut)]
+#![deny(missing_docs)]
+#![deny(unused_must_use)]
 
 extern crate bitcoin;
 extern crate tokio;
@@ -27,18 +26,17 @@ use crate::network::{connect, BlockHeaderDownload, Handshake};
 use bitcoin::blockdata::constants::genesis_block;
 use bitcoin::network::constants::Network;
 use bitcoin::Block;
-use std::net::SocketAddr;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 use tokio::prelude::Future;
 
 mod chain;
-mod network;
 mod ffi;
+mod network;
 
-pub use crate::ffi::c::*;
-#[cfg(target_os="android")]
+#[cfg(target_os = "android")]
 pub use crate::ffi::android::*;
+pub use crate::ffi::c::*;
 
 #[cfg(test)]
 mod test_helper;
@@ -74,7 +72,10 @@ impl SPV {
 
         let chain_state_for_block_header_download = chain_state.clone();
 
-        info!("Connect to remote peer {}. Network is {}.", remote_socket_addr, self.options.chain_params.network);
+        info!(
+            "Connect to remote peer {}. Network is {}.",
+            remote_socket_addr, self.options.chain_params.network
+        );
         let connection = connect(&remote_socket_addr, self.options.chain_params.network)
             .and_then(|peer| Handshake::new(peer))
             .and_then(move |peer| {

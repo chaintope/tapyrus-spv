@@ -4,6 +4,5 @@
 
 #include <stdint.h>
 
-void enable_log(void);
-const char* rust_greeting(const char* to);
-void rust_greeting_free(char *);
+void tapyrus_enable_log(void);
+void tapyrus_spv_run(const char* remote, const char* network);

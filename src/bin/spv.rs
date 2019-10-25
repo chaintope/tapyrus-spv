@@ -3,15 +3,12 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 extern crate tapyrus_spv;
 
-#[macro_use] extern crate log;
+extern crate log;
 
 use bitcoin::network::constants::Network;
-use log::Level;
-use std::borrow::Borrow;
 use tapyrus_spv::{ChainParams, Options, SPV};
 
 fn main() {
-    // TODO: specify log level by user argument
     env_logger::init();
 
     let params = Options {

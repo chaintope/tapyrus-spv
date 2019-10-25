@@ -2,6 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#![forbid(unsafe_code)]
 //! # Chain module
 //!
 //! This is a module for storing chains which is consisted of block headers and provide useful API

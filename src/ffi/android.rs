@@ -2,43 +2,45 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-extern crate jni;
 extern crate android_logger;
+extern crate jni;
 
-use super::*;
-use self::jni::JNIEnv;
 use self::jni::objects::{JClass, JString};
-use self::jni::sys::{jstring};
-use crate::ffi::c::rust_greeting;
-use bitcoin::Network;
-use std::ffi::CString;
-use log::Level;
-use crate::{Options, ChainParams, SPV};
+use self::jni::JNIEnv;
+use crate::tapyrus_spv_run;
 use android_logger::{Config, FilterBuilder};
+use log::Level;
 
+/// Make it possible to show logs on android
 #[no_mangle]
-pub extern "system" fn Java_com_chaintope_tapyrus_spv_FFI_enableLog(
-    env: JNIEnv,
-    _class: JClass
-) {
+pub extern "system" fn Java_com_chaintope_tapyrus_spv_FFI_enableLog(_env: JNIEnv, _class: JClass) {
     android_logger::init_once(
         Config::default()
             .with_min_level(Level::Trace) // limit log level
             .with_tag("libtapyrus_spv")
-            .with_filter( // configure messages for specific crate
-                          FilterBuilder::new()
-                              .parse("error,tapyrus_spv=trace")
-                              .build())
+            .with_filter(
+                // configure messages for specific crate
+                FilterBuilder::new()
+                    .parse("error,tapyrus_spv=trace")
+                    .build(),
+            ),
     );
 }
 
+/// Run spv node
 #[no_mangle]
-pub unsafe extern fn Java_com_chaintope_tapyrus_spv_RustGreetings_greeting(env: JNIEnv, _: JClass, java_pattern: JString) -> jstring {
-    // Our Java companion code might pass-in "world" as a string, hence the name.
-    let world = rust_greeting(env.get_string(java_pattern).expect("invalid pattern string").as_ptr());
-    // Retake pointer so that we can use it below and allow memory to be freed when it goes out of scope.
-    let world_ptr = CString::from_raw(world);
-    let output = env.new_string(world_ptr.to_str().unwrap()).expect("Couldn't create java string!");
-
-    output.into_inner()
+pub unsafe extern "C" fn Java_com_chaintope_tapyrus_spv_FFI_spvRun(
+    env: JNIEnv,
+    _: JClass,
+    remote: JString,
+    network: JString,
+) {
+    tapyrus_spv_run(
+        env.get_string(remote)
+            .expect("invalid pattern string")
+            .as_ptr(),
+        env.get_string(network)
+            .expect("invalid pattern string")
+            .as_ptr(),
+    )
 }
