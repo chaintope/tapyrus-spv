@@ -1,3 +1,7 @@
+// Copyright (c) 2019 Chaintope Inc.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 //! # Chain module
 //!
 //! This is a module for storing chains which is consisted of block headers and provide useful API
