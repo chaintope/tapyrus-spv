@@ -74,7 +74,9 @@ where
     }
 
     for header in headers {
-        let _ = chain_active.connect_block_header(header);
+        if let Err(e) = chain_active.connect_block_header(header) {
+            return Err(Error::ChainError(e));
+        }
     }
 
     if !all_headers_downloaded {
