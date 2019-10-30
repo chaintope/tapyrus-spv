@@ -19,6 +19,15 @@ pub use chain::ChainStore;
 pub enum Error {
     EncodeError(tapyrus::consensus::encode::Error),
     BitcoinHashesError(bitcoin_hashes::Error),
+    /// The error which arises under validating blocks.
+    BlockValidationError(BlockValidationErrorCause),
+}
+
+/// Causes of BlockValidationError
+#[derive(Debug)]
+pub enum BlockValidationErrorCause {
+    /// The block can't connect current chain tip.
+    CantConnectToTip,
 }
 
 impl From<tapyrus::consensus::encode::Error> for Error {

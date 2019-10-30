@@ -2,7 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-use crate::chain::{BlockIndex, Error};
+use crate::chain::{BlockIndex, BlockValidationErrorCause, Error};
 use bitcoin_hashes::{sha256d, Hash};
 use core::cmp;
 use hex;
@@ -24,9 +24,16 @@ impl<T: ChainStore> Chain<T> {
 }
 
 impl<T: ChainStore> Chain<T> {
-    // validate block header and connect to chain tip.
-    // TODO: implement validation
+    /// validate block header and connect to chain tip.
     pub fn connect_block_header(&mut self, header: BlockHeader) -> Result<(), Error> {
+        let tip = self.store.tip();
+
+        if tip.header.bitcoin_hash() != header.prev_blockhash {
+            return Err(Error::BlockValidationError(
+                BlockValidationErrorCause::CantConnectToTip,
+            ));
+        }
+
         let block_index = BlockIndex {
             header,
             height: self.height() + 1,
@@ -169,6 +176,17 @@ mod tests {
 
         let _ = chain.connect_block_header(header);
         assert_eq!(chain.get(0).unwrap().next_blockhash, hash);
+    }
+
+    #[test]
+    fn test_connect_block_header_fail_when_passed_connectable_block() {
+        let mut chain = build_chain(10);
+
+        let header = get_test_headers(11, 1).pop().unwrap();
+        assert!(chain.connect_block_header(header).is_ok());
+
+        let header = get_test_headers(13, 1).pop().unwrap();
+        assert!(chain.connect_block_header(header).is_err());
     }
 
     #[test]
