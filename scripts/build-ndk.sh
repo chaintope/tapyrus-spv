@@ -1,6 +1,7 @@
 #! /bin/bash
 
-CONTAINER=tapyrus-spv-ndk-build
+PROJECT_PATH=$(echo $PWD | sed -e 's/[^a-zA-Z4-9_.-]//g')
+CONTAINER="tapyrus-spv-ndk-build-on-${PROJECT_PATH}"
 IMAGE=rantan39/android-ndk-and-rustc:r20-latest
 
 if docker ps -f name=${CONTAINER} | grep -w ${CONTAINER} >/dev/null ; then
