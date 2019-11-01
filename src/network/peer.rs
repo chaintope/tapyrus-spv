@@ -4,19 +4,19 @@
 
 use crate::chain::{Chain, ChainStore};
 use crate::network::{utils::codec::NetworkMessagesCodec, Error};
-use tapyrus::network::message_blockdata::GetHeadersMessage;
-use tapyrus::network::{
-    address::Address,
-    constants::Network,
-    message::{NetworkMessage, RawNetworkMessage},
-    message_network::VersionMessage,
-};
 use bitcoin_hashes::sha256d;
 use rand::{thread_rng, RngCore};
 use std::{
     borrow::BorrowMut,
     net::SocketAddr,
     time::{SystemTime, UNIX_EPOCH},
+};
+use tapyrus::network::message_blockdata::GetHeadersMessage;
+use tapyrus::network::{
+    address::Address,
+    constants::Network,
+    message::{NetworkMessage, RawNetworkMessage},
+    message_network::VersionMessage,
 };
 use tokio::{codec::Framed, net::TcpStream, prelude::*};
 

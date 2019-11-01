@@ -5,12 +5,12 @@
 use crate::chain::{Chain, ChainStore};
 use crate::network::{error::MaliciousPeerCause, Error, Peer};
 use crate::ChainState;
-use tapyrus::network::message::NetworkMessage;
-use tapyrus::network::message::RawNetworkMessage;
 use std::cell::RefCell;
 use std::sync::{Arc, Mutex};
+use tapyrus::network::message::NetworkMessage;
+use tapyrus::network::message::RawNetworkMessage;
+use tapyrus::{BitcoinHash, BlockHeader};
 use tokio::prelude::{Async, Future, Sink, Stream};
-use tapyrus::{BlockHeader, BitcoinHash};
 
 /// The maximum number of block headers that can be in a single headers message.
 pub const MAX_HEADERS_RESULTS: usize = 2_000;
@@ -126,11 +126,13 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_helper::{channel, get_chain, get_test_headers, TwoWayChannel, get_test_genesis_block};
+    use crate::test_helper::{
+        channel, get_chain, get_test_genesis_block, get_test_headers, TwoWayChannel,
+    };
+    use bitcoin_hashes::sha256d;
     use tapyrus::blockdata::constants::genesis_block;
     use tapyrus::network::message_blockdata::GetHeadersMessage;
     use tapyrus::{BitcoinHash, Network};
-    use bitcoin_hashes::sha256d;
 
     #[test]
     fn test_process_headers_fails_when_passed_over_max_headers_results() {

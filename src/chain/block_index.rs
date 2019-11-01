@@ -2,9 +2,9 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-use tapyrus::consensus::{Decodable, Encodable};
-use tapyrus::BlockHeader;
 use bitcoin_hashes::sha256d;
+use tapyrus::consensus::{Decodable, Encodable};
+use tapyrus::{BlockHeader, Network};
 
 /// This struct is a index of block header. It has not only block header but also meta data like
 /// 'height', 'next_blockhash' for that.
@@ -17,7 +17,10 @@ pub struct BlockIndex {
 
 impl Encodable for BlockIndex {
     #[inline]
-    fn consensus_encode<S: std::io::Write>(&self, mut s: S) -> Result<usize, tapyrus::consensus::encode::Error> {
+    fn consensus_encode<S: std::io::Write>(
+        &self,
+        mut s: S,
+    ) -> Result<usize, tapyrus::consensus::encode::Error> {
         let mut len = 0;
         len += self.header.consensus_encode(&mut s)?;
         len += self.height.consensus_encode(&mut s)?;
@@ -28,7 +31,9 @@ impl Encodable for BlockIndex {
 
 impl Decodable for BlockIndex {
     #[inline]
-    fn consensus_decode<D: std::io::Read>(mut d: D) -> Result<Self, tapyrus::consensus::encode::Error> {
+    fn consensus_decode<D: std::io::Read>(
+        mut d: D,
+    ) -> Result<Self, tapyrus::consensus::encode::Error> {
         Ok(BlockIndex {
             header: Decodable::consensus_decode(&mut d)?,
             height: Decodable::consensus_decode(&mut d)?,

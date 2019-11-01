@@ -23,11 +23,11 @@ extern crate bytes;
 use crate::chain::store::OnMemoryChainStore;
 use crate::chain::{Chain, ChainStore};
 use crate::network::{connect, BlockHeaderDownload, Handshake};
+use std::path::Path;
+use std::sync::{Arc, Mutex};
 use tapyrus::blockdata::constants::genesis_block;
 use tapyrus::network::constants::Network;
 use tapyrus::Block;
-use std::path::Path;
-use std::sync::{Arc, Mutex};
 use tokio::prelude::Future;
 
 mod chain;
@@ -132,5 +132,5 @@ pub struct ChainParams {
     /// Network Type
     pub network: Network,
     /// Genesis block for network to be connected
-    pub genesis: Block
+    pub genesis: Block,
 }

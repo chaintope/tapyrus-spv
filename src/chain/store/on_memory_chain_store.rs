@@ -3,8 +3,8 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 use crate::chain::{BlockIndex, ChainStore};
-use tapyrus::{BitcoinHash, Block};
 use bitcoin_hashes::sha256d;
+use tapyrus::{BitcoinHash, Block};
 
 pub struct OnMemoryChainStore {
     headers: Vec<BlockIndex>,

@@ -3,10 +3,10 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 use crate::chain::{BlockIndex, Error};
-use tapyrus::{BitcoinHash, Block, BlockHeader};
 use bitcoin_hashes::{sha256d, Hash};
 use core::cmp;
 use hex;
+use tapyrus::{BitcoinHash, Block, BlockHeader};
 
 /// This struct presents the way to use single chain.
 #[derive(Debug)]
@@ -135,7 +135,7 @@ pub trait ChainStore {
 mod tests {
     use super::*;
     use crate::chain::store::OnMemoryChainStore;
-    use crate::test_helper::{get_test_block_hash, get_test_headers, get_chain};
+    use crate::test_helper::{get_chain, get_test_block_hash, get_test_headers};
     use tapyrus::consensus::serialize;
     use tapyrus::Network;
 

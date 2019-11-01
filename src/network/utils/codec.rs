@@ -3,11 +3,11 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 use super::bytes::BytesMut;
+use std::{io, io::ErrorKind};
 use tapyrus::{
     consensus::{deserialize_partial, encode, Encodable},
     network::message::RawNetworkMessage,
 };
-use std::{io, io::ErrorKind};
 use tokio::codec::{Decoder, Encoder};
 
 #[derive(Debug)]
@@ -68,9 +68,9 @@ impl Encoder for NetworkMessagesCodec {
 mod tests {
     use super::*;
     use crate::network::peer::version_message;
+    use bytes::BufMut;
     use tapyrus::network::constants::Network;
     use tapyrus::network::message::NetworkMessage;
-    use bytes::BufMut;
 
     #[test]
     fn decode_test() {

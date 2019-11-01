@@ -5,9 +5,9 @@ extern crate tapyrus_spv;
 
 extern crate log;
 
+use tapyrus::blockdata::constants::genesis_block;
 use tapyrus::network::constants::Network;
 use tapyrus_spv::{ChainParams, Options, SPV};
-use tapyrus::blockdata::constants::genesis_block;
 
 fn main() {
     env_logger::init();
