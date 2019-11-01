@@ -15,23 +15,24 @@ pub struct BlockIndex {
     pub next_blockhash: sha256d::Hash,
 }
 
-impl<S: Encoder> Encodable<S> for BlockIndex {
+impl Encodable for BlockIndex {
     #[inline]
-    fn consensus_encode(&self, s: &mut S) -> Result<(), bitcoin::consensus::encode::Error> {
-        self.header.consensus_encode(s)?;
-        self.height.consensus_encode(s)?;
-        self.next_blockhash.consensus_encode(s)?;
-        Ok(())
+    fn consensus_encode<S: std::io::Write>(&self, mut s: S) -> Result<usize, tapyrus::consensus::encode::Error> {
+        let mut len = 0;
+        len += self.header.consensus_encode(&mut s)?;
+        len += self.height.consensus_encode(&mut s)?;
+        len += self.next_blockhash.consensus_encode(&mut s)?;
+        Ok(len)
     }
 }
 
-impl<D: Decoder> Decodable<D> for BlockIndex {
+impl Decodable for BlockIndex {
     #[inline]
-    fn consensus_decode(d: &mut D) -> Result<BlockIndex, bitcoin::consensus::encode::Error> {
+    fn consensus_decode<D: std::io::Read>(mut d: D) -> Result<Self, tapyrus::consensus::encode::Error> {
         Ok(BlockIndex {
-            header: Decodable::consensus_decode(d)?,
-            height: Decodable::consensus_decode(d)?,
-            next_blockhash: Decodable::consensus_decode(d)?,
+            header: Decodable::consensus_decode(&mut d)?,
+            height: Decodable::consensus_decode(&mut d)?,
+            next_blockhash: Decodable::consensus_decode(&mut d)?,
         })
     }
 }
