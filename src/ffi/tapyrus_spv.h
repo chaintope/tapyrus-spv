@@ -5,4 +5,4 @@
 #include <stdint.h>
 
 void tapyrus_enable_log(void);
-void tapyrus_spv_run(const char* remote, const char* network);
+void tapyrus_spv_run(const char* remote, const char* network, const char* genesis_hex);

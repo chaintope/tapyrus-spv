@@ -7,6 +7,7 @@ extern crate log;
 
 use tapyrus::network::constants::Network;
 use tapyrus_spv::{ChainParams, Options, SPV};
+use tapyrus::blockdata::constants::genesis_block;
 
 fn main() {
     env_logger::init();
@@ -16,6 +17,7 @@ fn main() {
         datadir: "/tmp/tapyrus-spv".to_string(),
         chain_params: ChainParams {
             network: Network::Regtest,
+            genesis: genesis_block(Network::Regtest),
         },
     };
 

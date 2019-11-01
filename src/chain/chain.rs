@@ -135,22 +135,12 @@ pub trait ChainStore {
 mod tests {
     use super::*;
     use crate::chain::store::OnMemoryChainStore;
-    use crate::test_helper::{get_test_block_hash, get_test_headers};
-    use tapyrus::blockdata::constants::genesis_block;
+    use crate::test_helper::{get_test_block_hash, get_test_headers, get_chain};
     use tapyrus::consensus::serialize;
     use tapyrus::Network;
 
-    impl Default for Chain<OnMemoryChainStore> {
-        fn default() -> Self {
-            let mut store = OnMemoryChainStore::new();
-            store.initialize(genesis_block(Network::Regtest));
-
-            Chain { store }
-        }
-    }
-
     fn build_chain(height: usize) -> Chain<OnMemoryChainStore> {
-        let mut chain = Chain::<OnMemoryChainStore>::default();
+        let mut chain = get_chain();
 
         if height == 0 {
             return chain;

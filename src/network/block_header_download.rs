@@ -126,9 +126,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_helper::{
-        channel, get_chain, get_test_headers, TwoWayChannel,
-    };
+    use crate::test_helper::{channel, get_chain, get_test_headers, TwoWayChannel, get_test_genesis_block};
     use tapyrus::blockdata::constants::genesis_block;
     use tapyrus::network::message_blockdata::GetHeadersMessage;
     use tapyrus::{BitcoinHash, Network};
@@ -183,7 +181,7 @@ mod tests {
                             // test BlockHeaderDownload future send collect message.
                             assert_eq!(
                                 locator_hashes,
-                                vec![genesis_block(Network::Regtest).header.bitcoin_hash()]
+                                vec![get_test_genesis_block().header.bitcoin_hash()]
                             );
                             assert_eq!(stop_hash, sha256d::Hash::default());
                         }

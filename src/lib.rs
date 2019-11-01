@@ -66,7 +66,7 @@ impl SPV {
         ));
 
         let mut chain_store = OnMemoryChainStore::new();
-        chain_store.initialize(self.options.chain_params.genesis());
+        chain_store.initialize(self.options.chain_params.genesis.clone());
         let chain_active = Chain::new(chain_store);
         let chain_state = Arc::new(Mutex::new(ChainState::new(chain_active)));
 
@@ -131,11 +131,6 @@ pub struct Options {
 pub struct ChainParams {
     /// Network Type
     pub network: Network,
-}
-
-impl ChainParams {
-    /// Return genesis block
-    pub fn genesis(&self) -> Block {
-        genesis_block(self.network)
-    }
+    /// Genesis block for network to be connected
+    pub genesis: Block
 }

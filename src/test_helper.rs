@@ -7,7 +7,7 @@ use crate::chain::{BlockIndex, Chain, ChainStore};
 use crate::network::Error;
 use tapyrus::blockdata::constants::genesis_block;
 use tapyrus::consensus::deserialize;
-use tapyrus::{BitcoinHash, BlockHeader, Network};
+use tapyrus::{BitcoinHash, BlockHeader, Network, Block};
 use bitcoin_hashes::sha256d;
 use hex::decode as hex_decode;
 use tokio::prelude::*;
@@ -131,6 +131,13 @@ pub static HEADER_STRINGS: [&str; 100] = [
     "0000002051617b86373d1051841e8c1e76f290bf01c368ab10fd0e66a402cda0eb9612940638226488b23fe4064298ac02894447f0ea70aec318d017ca0b62d1bdbe2be2cf10014e36372860a887bc6f7ed31e132bdfb5a2cf53c76e8c05c925a6e006313c98bb5d402dcd87f48f09a7a074321c0d12783ca58379335385122ab4943d8781a1687996ce0e4ba7cc40c9f2f736cf5d39dda353353915a32e5cdadd8456cb5a9e58b4f4",
 ];
 
+pub static GENESIS_BLOCK_HEX: &str = "01000000000000000000000000000000000000000000000000000000000000000000000019225b47d8c3eefd0dab934ba4b633940d032a7f5a192a4ddece08f566f1cfb95d5022ed80bde51d7436cadcb10455a2e5523fea9e46dc9ee5dec0037387e1b137aaba5d40fd3748264662cd991ac70e8d9ae3e06a1ea8956d74b36aa6419ca428f9baf24dc4df95637dc524d6374ef59ef6d15aba25020de3c35da969b1329ec961488067010000002001000000000000000000000000000000000000000000000000000000000000000000000000222102260b9be70a87125fd0e2da368db857a2d8ee1cb85a3c8b81490f4f35f99b212affffffff0100f2052a010000001976a9143733df9979ee67615b16aff5b210d894557325df88ac00000000";
+
+pub fn get_test_genesis_block() -> Block {
+    let bytes = hex_decode(GENESIS_BLOCK_HEX).unwrap();
+    deserialize(&bytes).unwrap()
+}
+
 pub fn get_test_block_hash(height: usize) -> sha256d::Hash {
     get_test_headers(height, 1).first().unwrap().bitcoin_hash()
 }
@@ -159,7 +166,7 @@ pub fn get_test_headers(start: usize, count: usize) -> Vec<BlockHeader> {
 // return initialized chain
 pub fn get_chain() -> Chain<OnMemoryChainStore> {
     let mut store = OnMemoryChainStore::new();
-    store.initialize(genesis_block(Network::Regtest));
+    store.initialize(get_test_genesis_block());
     Chain::new(store)
 }
 
