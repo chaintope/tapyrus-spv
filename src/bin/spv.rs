@@ -5,7 +5,7 @@ extern crate tapyrus_spv;
 
 extern crate log;
 
-use bitcoin::network::constants::Network;
+use tapyrus::network::constants::Network;
 use tapyrus_spv::{ChainParams, Options, SPV};
 
 fn main() {

@@ -3,7 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 use crate::chain::{BlockIndex, Error};
-use bitcoin::{BitcoinHash, Block, BlockHeader};
+use tapyrus::{BitcoinHash, Block, BlockHeader};
 use bitcoin_hashes::{sha256d, Hash};
 use core::cmp;
 use hex;
@@ -136,9 +136,9 @@ mod tests {
     use super::*;
     use crate::chain::store::OnMemoryChainStore;
     use crate::test_helper::{get_test_block_hash, get_test_headers};
-    use bitcoin::blockdata::constants::genesis_block;
-    use bitcoin::consensus::serialize;
-    use bitcoin::Network;
+    use tapyrus::blockdata::constants::genesis_block;
+    use tapyrus::consensus::serialize;
+    use tapyrus::Network;
 
     impl Default for Chain<OnMemoryChainStore> {
         fn default() -> Self {

@@ -4,8 +4,8 @@
 
 use crate::chain::{Chain, ChainStore};
 use crate::network::{utils::codec::NetworkMessagesCodec, Error};
-use bitcoin::network::message_blockdata::GetHeadersMessage;
-use bitcoin::network::{
+use tapyrus::network::message_blockdata::GetHeadersMessage;
+use tapyrus::network::{
     address::Address,
     constants::Network,
     message::{NetworkMessage, RawNetworkMessage},

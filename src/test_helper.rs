@@ -5,10 +5,9 @@
 use crate::chain::store::OnMemoryChainStore;
 use crate::chain::{BlockIndex, Chain, ChainStore};
 use crate::network::Error;
-use bitcoin::blockdata::block::LoneBlockHeader;
-use bitcoin::blockdata::constants::genesis_block;
-use bitcoin::consensus::deserialize;
-use bitcoin::{BitcoinHash, BlockHeader, Network};
+use tapyrus::blockdata::constants::genesis_block;
+use tapyrus::consensus::deserialize;
+use tapyrus::{BitcoinHash, BlockHeader, Network};
 use bitcoin_hashes::sha256d;
 use hex::decode as hex_decode;
 use tokio::prelude::*;

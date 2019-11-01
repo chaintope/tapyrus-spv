@@ -2,8 +2,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-use bitcoin::consensus::{Decodable, Decoder, Encodable, Encoder};
-use bitcoin::BlockHeader;
+use tapyrus::consensus::{Decodable, Encodable};
+use tapyrus::BlockHeader;
 use bitcoin_hashes::sha256d;
 
 /// This struct is a index of block header. It has not only block header but also meta data like
@@ -40,7 +40,7 @@ impl<D: Decoder> Decodable<D> for BlockIndex {
 mod tests {
     use super::*;
     use crate::test_helper::get_test_block_index;
-    use bitcoin::consensus::{deserialize, serialize};
+    use tapyrus::consensus::{deserialize, serialize};
 
     const SERIALIZED_GENESIS_BLOCK_INDEX: &str = "0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4adae5494dffff7f2002000000000000000000000000000000000000000000000000000000000000000000000000000000";
 

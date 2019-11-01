@@ -4,7 +4,7 @@
 
 use crate::network::peer::version_message;
 use crate::network::{Error, Peer};
-use bitcoin::network::message::{NetworkMessage, RawNetworkMessage};
+use tapyrus::network::message::{NetworkMessage, RawNetworkMessage};
 use tokio::prelude::*;
 
 pub struct Handshake<T>
@@ -84,7 +84,7 @@ where
 mod tests {
     use super::*;
     use crate::test_helper::channel;
-    use bitcoin::network::constants::Network;
+    use tapyrus::network::constants::Network;
 
     #[test]
     fn test_handshake() {

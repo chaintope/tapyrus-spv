@@ -3,7 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 use super::bytes::BytesMut;
-use bitcoin::{
+use tapyrus::{
     consensus::{deserialize_partial, encode, Encodable},
     network::message::RawNetworkMessage,
 };
@@ -68,8 +68,8 @@ impl Encoder for NetworkMessagesCodec {
 mod tests {
     use super::*;
     use crate::network::peer::version_message;
-    use bitcoin::network::constants::Network;
-    use bitcoin::network::message::NetworkMessage;
+    use tapyrus::network::constants::Network;
+    use tapyrus::network::message::NetworkMessage;
     use bytes::BufMut;
 
     #[test]

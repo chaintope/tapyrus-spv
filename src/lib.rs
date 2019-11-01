@@ -14,7 +14,7 @@
 #![deny(missing_docs)]
 #![deny(unused_must_use)]
 
-extern crate bitcoin;
+extern crate tapyrus;
 extern crate tokio;
 #[macro_use]
 extern crate log;
@@ -23,9 +23,9 @@ extern crate bytes;
 use crate::chain::store::OnMemoryChainStore;
 use crate::chain::{Chain, ChainStore};
 use crate::network::{connect, BlockHeaderDownload, Handshake};
-use bitcoin::blockdata::constants::genesis_block;
-use bitcoin::network::constants::Network;
-use bitcoin::Block;
+use tapyrus::blockdata::constants::genesis_block;
+use tapyrus::network::constants::Network;
+use tapyrus::Block;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 use tokio::prelude::Future;

@@ -5,9 +5,9 @@
 use crate::chain::{Chain, ChainStore};
 use crate::network::{error::MaliciousPeerCause, Error, Peer};
 use crate::ChainState;
-use bitcoin::blockdata::block::LoneBlockHeader;
-use bitcoin::network::message::NetworkMessage;
-use bitcoin::network::message::RawNetworkMessage;
+use tapyrus::blockdata::block::LoneBlockHeader;
+use tapyrus::network::message::NetworkMessage;
+use tapyrus::network::message::RawNetworkMessage;
 use std::cell::RefCell;
 use std::sync::{Arc, Mutex};
 use tokio::prelude::{Async, Future, Sink, Stream};
@@ -129,9 +129,9 @@ mod tests {
     use crate::test_helper::{
         channel, get_chain, get_test_headers, get_test_lone_headers, TwoWayChannel,
     };
-    use bitcoin::blockdata::constants::genesis_block;
-    use bitcoin::network::message_blockdata::GetHeadersMessage;
-    use bitcoin::{BitcoinHash, Network};
+    use tapyrus::blockdata::constants::genesis_block;
+    use tapyrus::network::message_blockdata::GetHeadersMessage;
+    use tapyrus::{BitcoinHash, Network};
     use bitcoin_hashes::sha256d;
 
     #[test]
