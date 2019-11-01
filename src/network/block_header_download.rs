@@ -5,12 +5,12 @@
 use crate::chain::{Chain, ChainStore};
 use crate::network::{error::MaliciousPeerCause, Error, Peer};
 use crate::ChainState;
-use tapyrus::blockdata::block::LoneBlockHeader;
 use tapyrus::network::message::NetworkMessage;
 use tapyrus::network::message::RawNetworkMessage;
 use std::cell::RefCell;
 use std::sync::{Arc, Mutex};
 use tokio::prelude::{Async, Future, Sink, Stream};
+use tapyrus::{BlockHeader, BitcoinHash};
 
 /// The maximum number of block headers that can be in a single headers message.
 pub const MAX_HEADERS_RESULTS: usize = 2_000;
@@ -46,7 +46,7 @@ where
 fn process_headers<T, S: ChainStore>(
     peer: &mut Peer<T>,
     chain_active: &mut Chain<S>,
-    headers: Vec<LoneBlockHeader>,
+    headers: Vec<BlockHeader>,
     max_headers_results: usize,
 ) -> Result<bool, Error>
 where
@@ -62,7 +62,7 @@ where
     let all_headers_downloaded = headers.len() < max_headers_results;
 
     for header in headers {
-        let _ = chain_active.connect_block_header(header.header);
+        let _ = chain_active.connect_block_header(header);
     }
 
     if !all_headers_downloaded {
@@ -127,7 +127,7 @@ where
 mod tests {
     use super::*;
     use crate::test_helper::{
-        channel, get_chain, get_test_headers, get_test_lone_headers, TwoWayChannel,
+        channel, get_chain, get_test_headers, TwoWayChannel,
     };
     use tapyrus::blockdata::constants::genesis_block;
     use tapyrus::network::message_blockdata::GetHeadersMessage;
@@ -141,7 +141,7 @@ mod tests {
 
         let mut chain_state = ChainState::new(get_chain());
         let mut chain_active = chain_state.borrow_mut_chain_active();
-        let headers = get_test_lone_headers(1, 11);
+        let headers = get_test_headers(1, 11);
         let result = process_headers(&mut peer, &mut chain_active, headers, 10);
 
         assert!(result.is_err());
@@ -194,7 +194,7 @@ mod tests {
 
                 let headers_message = RawNetworkMessage {
                     magic: Network::Regtest.magic(),
-                    payload: NetworkMessage::Headers(get_test_lone_headers(1, 10)),
+                    payload: NetworkMessage::Headers(get_test_headers(1, 10)),
                 };
 
                 let _ = here.start_send(headers_message);
@@ -231,7 +231,7 @@ mod tests {
 
                 let headers_message = RawNetworkMessage {
                     magic: Network::Regtest.magic(),
-                    payload: NetworkMessage::Headers(get_test_lone_headers(10, 10)),
+                    payload: NetworkMessage::Headers(get_test_headers(10, 10)),
                 };
 
                 let _ = here.start_send(headers_message);
@@ -258,7 +258,7 @@ mod tests {
 
                 let headers_message = RawNetworkMessage {
                     magic: Network::Regtest.magic(),
-                    payload: NetworkMessage::Headers(get_test_lone_headers(20, 3)),
+                    payload: NetworkMessage::Headers(get_test_headers(20, 3)),
                 };
 
                 let _ = here.start_send(headers_message);

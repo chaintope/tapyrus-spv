@@ -124,7 +124,7 @@ pub fn get_test_block_hash(height: usize) -> sha256d::Hash {
 }
 
 pub fn get_test_block_index(height: i32) -> BlockIndex {
-    let header = get_test_headers(height as usize, 1)[0];
+    let header = get_test_headers(height as usize, 1).pop().unwrap();
     BlockIndex {
         header,
         height,
@@ -133,14 +133,7 @@ pub fn get_test_block_index(height: i32) -> BlockIndex {
 }
 
 pub fn get_test_headers(start: usize, count: usize) -> Vec<BlockHeader> {
-    get_test_lone_headers(start, count)
-        .into_iter()
-        .map(|v| v.header)
-        .collect()
-}
-
-pub fn get_test_lone_headers(start: usize, count: usize) -> Vec<LoneBlockHeader> {
-    let mut result: Vec<LoneBlockHeader> = vec![];
+    let mut result: Vec<BlockHeader> = vec![];
 
     for hex in &HEADER_STRINGS[start..start + count] {
         let bytes = hex_decode(hex).unwrap();
