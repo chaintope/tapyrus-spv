@@ -13,8 +13,6 @@
 #![deny(unused_mut)]
 #![deny(missing_docs)]
 #![deny(unused_must_use)]
-#![forbid(unsafe_code)]
-#![feature(async_await)]
 
 extern crate bitcoin;
 extern crate tokio;
@@ -22,19 +20,23 @@ extern crate tokio;
 extern crate log;
 extern crate bytes;
 
-use crate::chain::store::DBChainStore;
+use crate::chain::store::OnMemoryChainStore;
 use crate::chain::{Chain, ChainStore};
 use crate::network::{connect, BlockHeaderDownload, Handshake};
 use bitcoin::blockdata::constants::genesis_block;
 use bitcoin::network::constants::Network;
 use bitcoin::Block;
-use std::net::SocketAddr;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 use tokio::prelude::Future;
 
 mod chain;
+mod ffi;
 mod network;
+
+#[cfg(target_os = "android")]
+pub use crate::ffi::android::*;
+pub use crate::ffi::c::*;
 
 #[cfg(test)]
 mod test_helper;
@@ -53,23 +55,27 @@ impl SPV {
 
     /// run spv node.
     pub fn run(&self) {
-        info!("start SPV node.");
+        info!("Start SPV node.");
 
         // initialize chain_state
         let datadir_path = Path::new(&self.options.datadir);
+        info!("datadir is {}", datadir_path.display());
         let remote_socket_addr = self.options.remote.parse().expect(&format!(
             "Can not parse remote peer address: \"{}\"",
             self.options.remote
         ));
 
-        let db = rocksdb::DB::open_default(&datadir_path).unwrap();
-        let mut chain_store = DBChainStore::new(db);
+        let mut chain_store = OnMemoryChainStore::new();
         chain_store.initialize(self.options.chain_params.genesis());
         let chain_active = Chain::new(chain_store);
         let chain_state = Arc::new(Mutex::new(ChainState::new(chain_active)));
 
         let chain_state_for_block_header_download = chain_state.clone();
 
+        info!(
+            "Connect to remote peer {}. Network is {}.",
+            remote_socket_addr, self.options.chain_params.network
+        );
         let connection = connect(&remote_socket_addr, self.options.chain_params.network)
             .and_then(|peer| Handshake::new(peer))
             .and_then(move |peer| {
@@ -90,7 +96,7 @@ pub struct ChainState<T: ChainStore> {
     chain_active: Chain<T>,
 }
 
-impl ChainState<DBChainStore> {
+impl ChainState<OnMemoryChainStore> {
     /// create ChainState instance
     pub fn new<T: ChainStore>(chain_active: Chain<T>) -> ChainState<T> {
         ChainState { chain_active }

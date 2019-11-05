@@ -270,8 +270,6 @@ mod tests {
 
     #[test]
     fn test_block_header_download() {
-        let _ = simple_logger::init();
-
         let (here, there) = channel::<RawNetworkMessage>();
         let peer = Peer::new(0, there, "0.0.0.0:0".parse().unwrap(), Network::Regtest);
 

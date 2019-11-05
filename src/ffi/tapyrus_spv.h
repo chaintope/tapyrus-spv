@@ -2,6 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-mod on_memory_chain_store;
+#include <stdint.h>
 
-pub use on_memory_chain_store::OnMemoryChainStore;
+void tapyrus_enable_log(void);
+void tapyrus_spv_run(const char* remote, const char* network);

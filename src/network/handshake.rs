@@ -88,8 +88,6 @@ mod tests {
 
     #[test]
     fn test_handshake() {
-        let _ = simple_logger::init();
-
         let (here, there) = channel::<RawNetworkMessage>();
 
         let addr = "0.0.0.0:0".parse().unwrap();

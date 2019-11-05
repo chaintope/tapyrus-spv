@@ -1,16 +1,15 @@
 // Copyright (c) 2019 Chaintope Inc.
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
-extern crate simple_logger;
+extern crate tapyrus_spv;
+
+extern crate log;
 
 use bitcoin::network::constants::Network;
-use log::Level;
-use std::borrow::Borrow;
 use tapyrus_spv::{ChainParams, Options, SPV};
 
 fn main() {
-    // TODO: specify log level by user argument
-    simple_logger::init_with_level(Level::Trace).unwrap();
+    env_logger::init();
 
     let params = Options {
         remote: "127.0.0.1:18444".to_string(),

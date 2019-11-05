@@ -2,6 +2,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-mod on_memory_chain_store;
+pub mod c;
 
-pub use on_memory_chain_store::OnMemoryChainStore;
+#[cfg(target_os = "android")]
+#[allow(non_snake_case)]
+pub mod android;

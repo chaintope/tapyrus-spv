@@ -2,6 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#![forbid(unsafe_code)]
 //! # Chain module
 //!
 //! This is a module for storing chains which is consisted of block headers and provide useful API
@@ -17,15 +18,8 @@ pub use chain::ChainStore;
 
 #[derive(Debug)]
 pub enum Error {
-    RocksDBError(rocksdb::Error),
     EncodeError(bitcoin::consensus::encode::Error),
     BitcoinHashesError(bitcoin_hashes::Error),
-}
-
-impl From<rocksdb::Error> for Error {
-    fn from(e: rocksdb::Error) -> Error {
-        Error::RocksDBError(e)
-    }
 }
 
 impl From<bitcoin::consensus::encode::Error> for Error {

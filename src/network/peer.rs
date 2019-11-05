@@ -104,9 +104,11 @@ pub fn connect(
     address: &SocketAddr,
     network: Network,
 ) -> impl Future<Item = Peer<Framed<TcpStream, NetworkMessagesCodec>>, Error = Error> {
+    trace!("Try to create TCP connection to {}", address);
     TcpStream::connect(address)
         .map(move |stream| {
             let addr = stream.peer_addr().unwrap();
+            trace!("Success to create TCP connection to {}", addr);
             let stream = Framed::new(stream, NetworkMessagesCodec::new());
             Peer::new(0, stream, addr, network)
         })
