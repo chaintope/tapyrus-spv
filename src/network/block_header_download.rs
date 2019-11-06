@@ -9,7 +9,7 @@ use std::cell::RefCell;
 use std::sync::{Arc, Mutex};
 use tapyrus::network::message::NetworkMessage;
 use tapyrus::network::message::RawNetworkMessage;
-use tapyrus::{BitcoinHash, BlockHeader};
+use tapyrus::BlockHeader;
 use tokio::prelude::{Async, Future, Sink, Stream};
 
 /// The maximum number of block headers that can be in a single headers message.
@@ -130,7 +130,6 @@ mod tests {
         channel, get_chain, get_test_genesis_block, get_test_headers, TwoWayChannel,
     };
     use bitcoin_hashes::sha256d;
-    use tapyrus::blockdata::constants::genesis_block;
     use tapyrus::network::message_blockdata::GetHeadersMessage;
     use tapyrus::{BitcoinHash, Network};
 

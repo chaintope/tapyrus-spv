@@ -137,7 +137,6 @@ mod tests {
     use crate::chain::store::OnMemoryChainStore;
     use crate::test_helper::{get_chain, get_test_block_hash, get_test_headers};
     use tapyrus::consensus::serialize;
-    use tapyrus::Network;
 
     fn build_chain(height: usize) -> Chain<OnMemoryChainStore> {
         let mut chain = get_chain();

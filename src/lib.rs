@@ -25,7 +25,6 @@ use crate::chain::{Chain, ChainStore};
 use crate::network::{connect, BlockHeaderDownload, Handshake};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
-use tapyrus::blockdata::constants::genesis_block;
 use tapyrus::network::constants::Network;
 use tapyrus::Block;
 use tokio::prelude::Future;

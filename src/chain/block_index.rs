@@ -4,7 +4,7 @@
 
 use bitcoin_hashes::sha256d;
 use tapyrus::consensus::{Decodable, Encodable};
-use tapyrus::{BlockHeader, Network};
+use tapyrus::BlockHeader;
 
 /// This struct is a index of block header. It has not only block header but also meta data like
 /// 'height', 'next_blockhash' for that.
