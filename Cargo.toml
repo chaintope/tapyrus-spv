@@ -14,7 +14,7 @@ path = "src/lib.rs"
 crate-type=["lib", "cdylib", "staticlib"]
 
 [dependencies]
-tapyrus = { git = "https://github.com/chaintope/rust-tapyrus" }
+tapyrus = { git = "https://github.com/chaintope/rust-tapyrus", branch = "adapt_tapyrus_network" }
 bitcoin_hashes = "0.7"
 log="0.4"
 env_logger = "0.7.1"
