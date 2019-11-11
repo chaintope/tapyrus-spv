@@ -18,6 +18,7 @@ extern crate tapyrus;
 extern crate tokio;
 #[macro_use]
 extern crate log;
+extern crate byteorder;
 extern crate bytes;
 
 use crate::chain::store::OnMemoryChainStore;
