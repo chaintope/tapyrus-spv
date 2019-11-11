@@ -141,7 +141,7 @@ pub fn version_message() -> VersionMessage {
         Address::new(&blank_addr, 0),
         Address::new(&blank_addr, services),
         nonce,
-        format!("/bitcoin-spv:{}/", VERSION),
+        format!("/tapyrus-spv:{}/", VERSION),
         start_height,
     )
 }
