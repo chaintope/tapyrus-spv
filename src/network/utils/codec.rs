@@ -48,6 +48,8 @@ impl Decoder for NetworkMessagesCodec {
                 warn!("Received unrecognized network command {}", cmd);
 
                 // Skip unrecognized message.
+                // rust-tapyrus cargo still has unsupporting messages which defined in network
+                // protocol like `cmpctblock`, `feefilter`. So it is skipped so far.
                 src.advance(4 + 12); // magic(4bytes) + command string(12bytes)
                 let payload_size = {
                     let mut decoder = io::Cursor::new(&src);
