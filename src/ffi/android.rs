@@ -34,12 +34,16 @@ pub unsafe extern "C" fn Java_com_chaintope_tapyrus_spv_FFI_spvRun(
     _: JClass,
     remote: JString,
     network: JString,
+    genesisHex: JString,
 ) {
     tapyrus_spv_run(
         env.get_string(remote)
             .expect("invalid pattern string")
             .as_ptr(),
         env.get_string(network)
+            .expect("invalid pattern string")
+            .as_ptr(),
+        env.get_string(genesisHex)
             .expect("invalid pattern string")
             .as_ptr(),
     )

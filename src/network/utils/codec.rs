@@ -3,11 +3,12 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 use super::bytes::BytesMut;
-use bitcoin::{
+use byteorder::{LittleEndian, ReadBytesExt};
+use std::{io, io::ErrorKind};
+use tapyrus::{
     consensus::{deserialize_partial, encode, Encodable},
     network::message::RawNetworkMessage,
 };
-use std::{io, io::ErrorKind};
 use tokio::codec::{Decoder, Encoder};
 
 #[derive(Debug)]
@@ -43,6 +44,21 @@ impl Decoder for NetworkMessagesCodec {
                 Ok(Some(raw_msg))
             }
             Err(encode::Error::Io(ref e)) if e.kind() == ErrorKind::UnexpectedEof => Ok(None),
+            Err(encode::Error::UnrecognizedNetworkCommand(cmd)) => {
+                warn!("Received unrecognized network command {}", cmd);
+
+                // Skip unrecognized message.
+                // rust-tapyrus cargo still has unsupporting messages which defined in network
+                // protocol like `cmpctblock`, `feefilter`. So it is skipped so far.
+                src.advance(4 + 12); // magic(4bytes) + command string(12bytes)
+                let payload_size = {
+                    let mut decoder = io::Cursor::new(&src);
+                    ReadBytesExt::read_u32::<LittleEndian>(&mut decoder)? as usize
+                };
+                src.advance(4 + 4 + payload_size); // length(4bytes) + checksum(4bytes) + payload
+
+                Ok(None)
+            }
             Err(e) => Err(Error::Encode(e)),
         }
     }
@@ -68,13 +84,13 @@ impl Encoder for NetworkMessagesCodec {
 mod tests {
     use super::*;
     use crate::network::peer::version_message;
-    use bitcoin::network::constants::Network;
-    use bitcoin::network::message::NetworkMessage;
     use bytes::BufMut;
+    use tapyrus::network::constants::Network;
+    use tapyrus::network::message::NetworkMessage;
 
     #[test]
     fn decode_test() {
-        let data = [
+        let data: [u8; 137] = [
             0x0b, 0x11, 0x09, 0x07, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x69, 0x00, 0x00, 0x00, 0x3e, 0x1d, 0xe1, 0x69, 0x71, 0x11, 0x01, 0x00,
             0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x19, 0x3b, 0x4d, 0x5d, 0x00, 0x00,
@@ -110,8 +126,27 @@ mod tests {
     }
 
     #[test]
+    fn decode_unrecognized_command() {
+        let data: [u8; 33] = [
+            0x73, 0x9a, 0x97, 0x74, 0x73, 0x65, 0x6e, 0x64, 0x63, 0x6d, 0x70, 0x63, 0x74, 0x00,
+            0x00, 0x00, 0x09, 0x00, 0x00, 0x00, 0xcc, 0xfe, 0x10, 0x4a, 0x00, 0x01, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00,
+        ];
+
+        let mut codec = NetworkMessagesCodec::new();
+        let mut buf = bytes::BytesMut::with_capacity(1024);
+        buf.put_slice(&data);
+
+        if let Ok(None) = codec.decode(&mut buf) {
+            assert_eq!(buf.len(), 0);
+        } else {
+            assert!(false, "decode should return `Ok(None)`");
+        }
+    }
+
+    #[test]
     fn decode_incompleteness_data_test() {
-        let data = [
+        let data: [u8; 24] = [
             0x0b, 0x11, 0x09, 0x07, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x69, 0x00, 0x00, 0x00, 0x3e, 0x1d, 0xe1, 0x69,
         ];

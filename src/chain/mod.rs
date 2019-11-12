@@ -2,7 +2,6 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#![forbid(unsafe_code)]
 //! # Chain module
 //!
 //! This is a module for storing chains which is consisted of block headers and provide useful API
@@ -18,12 +17,12 @@ pub use chain::ChainStore;
 
 #[derive(Debug)]
 pub enum Error {
-    EncodeError(bitcoin::consensus::encode::Error),
+    EncodeError(tapyrus::consensus::encode::Error),
     BitcoinHashesError(bitcoin_hashes::Error),
 }
 
-impl From<bitcoin::consensus::encode::Error> for Error {
-    fn from(e: bitcoin::consensus::encode::Error) -> Error {
+impl From<tapyrus::consensus::encode::Error> for Error {
+    fn from(e: tapyrus::consensus::encode::Error) -> Error {
         Error::EncodeError(e)
     }
 }
