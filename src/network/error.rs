@@ -20,6 +20,8 @@ pub enum MaliciousPeerCause {
     /// The peer send over maximum number which is MAX_HEADERS_RESULTS of headers in single
     /// headers message.
     SendOverMaxHeadersResults,
+    /// The peer send non-continuous headers sequence.
+    SendNonContinuousHeadersSequence,
 }
 
 impl From<std::io::Error> for Error {
