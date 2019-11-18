@@ -8,6 +8,12 @@ use core::cmp;
 use hex;
 use tapyrus::{BitcoinHash, Block, BlockHeader};
 
+/// The block version value must be in block header version field.
+const BLOCK_VERSION: u32 = 1;
+
+/// This will remove after Tapyrus core version bit is fixed as `1`.
+const BIP9_VERSION_BITS_TOP_BITS: u32 = 0x20000000;
+
 /// This struct presents the way to use single chain.
 #[derive(Debug)]
 pub struct Chain<T>
@@ -26,13 +32,7 @@ impl<T: ChainStore> Chain<T> {
 impl<T: ChainStore> Chain<T> {
     /// validate block header and connect to chain tip.
     pub fn connect_block_header(&mut self, header: BlockHeader) -> Result<(), Error> {
-        let tip = self.store.tip();
-
-        if tip.header.bitcoin_hash() != header.prev_blockhash {
-            return Err(Error::BlockValidationError(
-                BlockValidationErrorCause::CantConnectToTip,
-            ));
-        }
+        self.check_connect_to_tip(&header)?;
 
         let block_index = BlockIndex {
             header,
@@ -50,6 +50,29 @@ impl<T: ChainStore> Chain<T> {
         }
 
         self.store.update_tip(&block_index);
+
+        Ok(())
+    }
+
+    fn check_connect_to_tip(&self, header: &BlockHeader) -> Result<(), Error> {
+        let tip = self.store.tip();
+
+        // check version
+        if header.version != 1 && header.version != BIP9_VERSION_BITS_TOP_BITS {
+            return Err(Error::BlockValidationError(
+                BlockValidationErrorCause::WrongBlockVersion {
+                    wrong_version: header.version,
+                    correct_version: BLOCK_VERSION
+                }
+            ));
+        }
+
+        // check prev_blockhash
+        if tip.header.bitcoin_hash() != header.prev_blockhash {
+            return Err(Error::BlockValidationError(
+                BlockValidationErrorCause::CantConnectToTip,
+            ));
+        }
 
         Ok(())
     }
@@ -186,6 +209,15 @@ mod tests {
         assert!(chain.connect_block_header(header).is_ok());
 
         let header = get_test_headers(13, 1).pop().unwrap();
+        assert!(chain.connect_block_header(header).is_err());
+    }
+
+    #[test]
+    fn test_connect_block_ehader_fail_when_passed_wrong_version_block() {
+        let mut chain = build_chain(10);
+
+        let mut header = get_test_headers(11, 1).pop().unwrap();
+        header.version = 2;
         assert!(chain.connect_block_header(header).is_err());
     }
 
