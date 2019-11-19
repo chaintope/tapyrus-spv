@@ -6,6 +6,7 @@ use crate::chain::{BlockIndex, BlockValidationErrorCause, Error};
 use bitcoin_hashes::{sha256d, Hash};
 use core::cmp;
 use hex;
+use std::time::{Duration, SystemTime};
 use tapyrus::{BitcoinHash, Block, BlockHeader};
 
 /// The block version value must be in block header version field.
@@ -13,6 +14,8 @@ const BLOCK_VERSION: u32 = 1;
 
 /// This will remove after Tapyrus core version bit is fixed as `1`.
 const BIP9_VERSION_BITS_TOP_BITS: u32 = 0x20000000;
+
+const MEDIAN_TIME_SPAN: usize = 11;
 
 /// This struct presents the way to use single chain.
 #[derive(Debug)]
@@ -29,7 +32,46 @@ impl<T: ChainStore> Chain<T> {
     }
 }
 
-impl<T: ChainStore> Chain<T> {
+impl<'a, T: ChainStore> Chain<T> {
+    pub fn get_iterator(&'a self) -> ChainIterator<'a, T> {
+        self.get_iterator_with_range(&self.genesis(), &self.tip())
+    }
+
+    pub fn get_iterator_with_range(
+        &'a self,
+        start: &BlockIndex,
+        end: &BlockIndex,
+    ) -> ChainIterator<'a, T> {
+        assert!(start.height <= end.height);
+        assert!(self.includes(start));
+        assert!(self.includes(end));
+
+        ChainIterator {
+            chain: self,
+            next: start.height,
+            next_back: end.height,
+        }
+    }
+
+    pub fn includes(&self, index: &BlockIndex) -> bool {
+        match self.get(index.height) {
+            Some(i) => i == *index,
+            None => false,
+        }
+    }
+
+    pub fn get_median_time_past(&self, index: &BlockIndex) -> u32 {
+        let mut vec: Vec<u32> = self
+            .get_iterator_with_range(&self.genesis(), index)
+            .rev()
+            .take(MEDIAN_TIME_SPAN)
+            .map(|i| i.header.time)
+            .collect::<Vec<u32>>();
+        vec.sort();
+
+        vec[vec.len() / 2]
+    }
+
     /// validate block header and connect to chain tip.
     pub fn connect_block_header(&mut self, header: BlockHeader) -> Result<(), Error> {
         self.check_connect_to_tip(&header)?;
@@ -93,6 +135,11 @@ impl<T: ChainStore> Chain<T> {
         self.get(self.height()).unwrap()
     }
 
+    /// Return genesis block
+    pub fn genesis(&self) -> BlockIndex {
+        self.get(0).unwrap()
+    }
+
     /// Return block hash list for indicate which blocks are include in block.
     pub fn get_locator(&self) -> Vec<sha256d::Hash> {
         let mut step: i32 = 1;
@@ -121,6 +168,42 @@ impl<T: ChainStore> Chain<T> {
         }
 
         have
+    }
+}
+
+/// This is iterator of Chain struct for to deal continuous blocks which are part of the chain.
+pub struct ChainIterator<'a, T>
+where
+    T: ChainStore,
+{
+    chain: &'a Chain<T>,
+    next: i32,
+    next_back: i32,
+}
+
+impl<'a, T: ChainStore> Iterator for ChainIterator<'a, T> {
+    type Item = BlockIndex;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.next > self.next_back {
+            None
+        } else {
+            let old = self.chain.get(self.next).unwrap();
+            self.next = self.next + 1;
+            Some(old)
+        }
+    }
+}
+
+impl<'a, T: ChainStore> DoubleEndedIterator for ChainIterator<'a, T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.next > self.next_back {
+            None
+        } else {
+            let old = self.chain.get(self.next_back).unwrap();
+            self.next_back = self.next_back - 1;
+            Some(old)
+        }
     }
 }
 
@@ -166,20 +249,43 @@ mod tests {
     use super::*;
     use crate::chain::store::OnMemoryChainStore;
     use crate::test_helper::{get_chain, get_test_block_hash, get_test_headers};
+    use std::time::{SystemTime, UNIX_EPOCH};
     use tapyrus::consensus::serialize;
+    use tapyrus::Script;
+    use tapyrus::blockdata::block::Signature;
 
-    fn build_chain(height: usize) -> Chain<OnMemoryChainStore> {
+    #[test]
+    fn test_get_median_time_past() {
         let mut chain = get_chain();
+        let mut time = chain.genesis().header.time;
 
-        if height == 0 {
-            return chain;
+        for height in 1..11 {
+            chain.connect_block_header(BlockHeader {
+                version: 1,
+                prev_blockhash: chain.get(height - 1).unwrap().header.bitcoin_hash(),
+                merkle_root: Default::default(),
+                im_merkle_root: Default::default(),
+                time: time + 1,
+                proof: Signature { signature: Script::new() },
+            }).unwrap();
+
+            time += 1;
         }
 
-        for header in get_test_headers(1, height) {
-            let _ = chain.connect_block_header(header);
-        }
+        assert_eq!(
+            chain.get_median_time_past(&chain.get(0).unwrap()),
+            chain.get(0).unwrap().header.time
+        );
 
-        chain
+        assert_eq!(
+            chain.get_median_time_past(&chain.get(1).unwrap()),
+            chain.get(1).unwrap().header.time
+        );
+
+        assert_eq!(
+            chain.get_median_time_past(&chain.get(10).unwrap()),
+            chain.get(5).unwrap().header.time
+        );
     }
 
     #[test]

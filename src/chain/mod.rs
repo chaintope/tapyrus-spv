@@ -28,7 +28,10 @@ pub enum Error {
 pub enum BlockValidationErrorCause {
     /// The block can't connect current chain tip.
     CantConnectToTip,
-    WrongBlockVersion { wrong_version: u32, correct_version: u32 }
+    WrongBlockVersion {
+        wrong_version: u32,
+        correct_version: u32,
+    },
 }
 
 impl From<tapyrus::consensus::encode::Error> for Error {

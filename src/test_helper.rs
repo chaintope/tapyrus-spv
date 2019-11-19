@@ -169,6 +169,20 @@ pub fn get_chain() -> Chain<OnMemoryChainStore> {
     Chain::new(store)
 }
 
+pub fn get_test_chain(height: usize) -> Chain<OnMemoryChainStore> {
+    let mut chain = get_chain();
+
+    if height == 0 {
+        return chain;
+    }
+
+    for header in get_test_headers(1, height) {
+        chain.connect_block_header(header).unwrap();
+    }
+
+    chain
+}
+
 pub struct TwoWayChannel<T> {
     sender: UnboundedSender<T>,
     receiver: UnboundedReceiver<T>,
