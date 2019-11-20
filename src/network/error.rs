@@ -2,6 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+use crate::chain;
 use crate::network::peer::PeerID;
 use crate::network::utils::codec;
 
@@ -12,6 +13,7 @@ pub enum Error {
     UnboundedSendError(tokio::sync::mpsc::error::UnboundedSendError),
     UnboundedRecvError(tokio::sync::mpsc::error::UnboundedRecvError),
     MaliciousPeer(PeerID, MaliciousPeerCause),
+    ChainError(chain::Error),
     WrongMagicBytes,
 }
 
@@ -20,6 +22,8 @@ pub enum MaliciousPeerCause {
     /// The peer send over maximum number which is MAX_HEADERS_RESULTS of headers in single
     /// headers message.
     SendOverMaxHeadersResults,
+    /// The peer send non-continuous headers sequence.
+    SendNonContinuousHeadersSequence,
 }
 
 impl From<std::io::Error> for Error {

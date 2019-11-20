@@ -5,11 +5,12 @@
 use crate::chain::{Chain, ChainStore};
 use crate::network::{error::MaliciousPeerCause, Error, Peer};
 use crate::ChainState;
+use bitcoin_hashes::sha256d;
 use std::cell::RefCell;
 use std::sync::{Arc, Mutex};
 use tapyrus::network::message::NetworkMessage;
 use tapyrus::network::message::RawNetworkMessage;
-use tapyrus::BlockHeader;
+use tapyrus::{BitcoinHash, BlockHeader};
 use tokio::prelude::{Async, Future, Sink, Stream};
 
 /// The maximum number of block headers that can be in a single headers message.
@@ -61,8 +62,21 @@ where
 
     let all_headers_downloaded = headers.len() < max_headers_results;
 
+    // Check whether headers sequence is continuous.
+    let mut header_iter = (&headers).into_iter().peekable();
+    while let (Some(header), Some(next_header)) = (header_iter.next(), header_iter.peek()) {
+        if header.bitcoin_hash() != next_header.prev_blockhash {
+            return Err(Error::MaliciousPeer(
+                peer.id,
+                MaliciousPeerCause::SendNonContinuousHeadersSequence,
+            ));
+        }
+    }
+
     for header in headers {
-        let _ = chain_active.connect_block_header(header);
+        if let Err(e) = chain_active.connect_block_header(header) {
+            return Err(Error::ChainError(e));
+        }
     }
 
     if !all_headers_downloaded {
@@ -145,7 +159,29 @@ mod tests {
 
         assert!(result.is_err());
         match result {
-            Err(Error::MaliciousPeer(peer_id, _)) => assert_eq!(peer_id, 0),
+            Err(Error::MaliciousPeer(peer_id, MaliciousPeerCause::SendOverMaxHeadersResults)) => {
+                assert_eq!(peer_id, 0);
+            }
+            _ => assert!(false),
+        }
+    }
+
+    #[test]
+    fn test_process_headers_fails_when_passed_unchained_headers() {
+        let (_here, there) = channel::<RawNetworkMessage>();
+        let mut peer = Peer::new(0, there, "0.0.0.0:0".parse().unwrap(), Network::Regtest);
+
+        let mut chain_state = ChainState::new(get_chain());
+        let mut chain_active = chain_state.borrow_mut_chain_active();
+        let mut headers = get_test_headers(1, 11);
+        headers.reverse(); // reverse block headers order, so the headers
+        let result = process_headers(&mut peer, &mut chain_active, headers, 10);
+
+        assert!(result.is_err());
+        match result {
+            Err(Error::MaliciousPeer(peer_id, MaliciousPeerCause::SendOverMaxHeadersResults)) => {
+                assert_eq!(peer_id, 0);
+            }
             _ => assert!(false),
         }
     }
@@ -230,7 +266,7 @@ mod tests {
 
                 let headers_message = RawNetworkMessage {
                     magic: Network::Regtest.magic(),
-                    payload: NetworkMessage::Headers(get_test_headers(10, 10)),
+                    payload: NetworkMessage::Headers(get_test_headers(11, 10)),
                 };
 
                 let _ = here.start_send(headers_message);
@@ -257,7 +293,7 @@ mod tests {
 
                 let headers_message = RawNetworkMessage {
                     magic: Network::Regtest.magic(),
-                    payload: NetworkMessage::Headers(get_test_headers(20, 3)),
+                    payload: NetworkMessage::Headers(get_test_headers(21, 3)),
                 };
 
                 let _ = here.start_send(headers_message);
