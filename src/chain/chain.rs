@@ -75,7 +75,34 @@ impl<'a, T: ChainStore> Chain<T> {
     /// validate block header and connect to chain tip.
     pub fn connect_block_header(&mut self, header: BlockHeader) -> Result<(), Error> {
         self.check_connect_to_tip(&header)?;
+        self.connect_block_header_without_check(header);
+        Ok(())
+    }
 
+    fn check_connect_to_tip(&self, header: &BlockHeader) -> Result<(), Error> {
+        let tip = self.store.tip();
+
+        // check version
+        if header.version != 1 && header.version != BIP9_VERSION_BITS_TOP_BITS {
+            return Err(Error::BlockValidationError(
+                BlockValidationErrorCause::WrongBlockVersion {
+                    wrong_version: header.version,
+                    correct_version: BLOCK_VERSION,
+                },
+            ));
+        }
+
+        // check prev_blockhash
+        if tip.header.bitcoin_hash() != header.prev_blockhash {
+            return Err(Error::BlockValidationError(
+                BlockValidationErrorCause::CantConnectToTip,
+            ));
+        }
+
+        Ok(())
+    }
+
+    fn connect_block_header_without_check(&mut self, header: BlockHeader) {
         let block_index = BlockIndex {
             header,
             height: self.height() + 1,
@@ -92,31 +119,6 @@ impl<'a, T: ChainStore> Chain<T> {
         }
 
         self.store.update_tip(&block_index);
-
-        Ok(())
-    }
-
-    fn check_connect_to_tip(&self, header: &BlockHeader) -> Result<(), Error> {
-        let tip = self.store.tip();
-
-        // check version
-        if header.version != 1 && header.version != BIP9_VERSION_BITS_TOP_BITS {
-            return Err(Error::BlockValidationError(
-                BlockValidationErrorCause::WrongBlockVersion {
-                    wrong_version: header.version,
-                    correct_version: BLOCK_VERSION
-                }
-            ));
-        }
-
-        // check prev_blockhash
-        if tip.header.bitcoin_hash() != header.prev_blockhash {
-            return Err(Error::BlockValidationError(
-                BlockValidationErrorCause::CantConnectToTip,
-            ));
-        }
-
-        Ok(())
     }
 
     /// Return height of tip.
@@ -248,7 +250,7 @@ pub trait ChainStore {
 mod tests {
     use super::*;
     use crate::chain::store::OnMemoryChainStore;
-    use crate::test_helper::{get_chain, get_test_block_hash, get_test_headers};
+    use crate::test_helper::{get_chain, get_test_block_hash, get_test_headers, get_test_chain};
     use std::time::{SystemTime, UNIX_EPOCH};
     use tapyrus::consensus::serialize;
     use tapyrus::Script;
@@ -290,7 +292,7 @@ mod tests {
 
     #[test]
     fn test_block_index_serialize() {
-        let chain = build_chain(0);
+        let chain = get_test_chain(0);
         let index = chain.get(0).unwrap();
         let bytes = serialize(&index);
 
@@ -299,7 +301,7 @@ mod tests {
 
     #[test]
     fn test_connect_block_header_set_next_blockhash() {
-        let mut chain = build_chain(0);
+        let mut chain = get_test_chain(0);
         let header = get_test_headers(1, 1).pop().unwrap();
         let hash = header.bitcoin_hash();
 
@@ -309,7 +311,7 @@ mod tests {
 
     #[test]
     fn test_connect_block_header_fail_when_passed_connectable_block() {
-        let mut chain = build_chain(10);
+        let mut chain = get_test_chain(10);
 
         let header = get_test_headers(11, 1).pop().unwrap();
         assert!(chain.connect_block_header(header).is_ok());
@@ -319,8 +321,8 @@ mod tests {
     }
 
     #[test]
-    fn test_connect_block_ehader_fail_when_passed_wrong_version_block() {
-        let mut chain = build_chain(10);
+    fn test_connect_block_header_fail_when_passed_wrong_version_block() {
+        let mut chain = get_test_chain(10);
 
         let mut header = get_test_headers(11, 1).pop().unwrap();
         header.version = 2;
@@ -330,11 +332,11 @@ mod tests {
     #[test]
     fn test_get_locator() {
         // when chain size is 1
-        let chain = build_chain(0);
+        let chain = get_test_chain(0);
         assert_eq!(chain.get_locator(), vec![get_test_block_hash(0)]);
 
         // when chain size is 10
-        let chain = build_chain(9);
+        let chain = get_test_chain(9);
         let expected: Vec<sha256d::Hash> = get_test_headers(0, 10)
             .into_iter()
             .rev()
@@ -343,7 +345,7 @@ mod tests {
         assert_eq!(chain.get_locator(), expected);
 
         // when chain size is 100
-        let chain = build_chain(99);
+        let chain = get_test_chain(99);
         let mut expected = Vec::new();
 
         for i in &[
