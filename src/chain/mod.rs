@@ -32,6 +32,8 @@ pub enum BlockValidationErrorCause {
         wrong_version: u32,
         correct_version: u32,
     },
+    BlockTimeTooOld,
+    BlockTimeTooNew,
 }
 
 impl From<tapyrus::consensus::encode::Error> for Error {

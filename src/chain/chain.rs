@@ -3,6 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 use crate::chain::{BlockIndex, BlockValidationErrorCause, Error};
+use crate::network::time::get_adjusted_time;
 use bitcoin_hashes::{sha256d, Hash};
 use core::cmp;
 use hex;
@@ -16,6 +17,10 @@ const BLOCK_VERSION: u32 = 1;
 const BIP9_VERSION_BITS_TOP_BITS: u32 = 0x20000000;
 
 const MEDIAN_TIME_SPAN: usize = 11;
+
+/// Maximum amount of time that a block timestamp is allowed to exceed the current network-adjusted
+/// time before the block will be accepted. (seconds)
+const MAX_FUTURE_BLOCK_TIME: u64 = 2 * 60 * 60;
 
 /// This struct presents the way to use single chain.
 #[derive(Debug)]
@@ -89,6 +94,18 @@ impl<'a, T: ChainStore> Chain<T> {
                     wrong_version: header.version,
                     correct_version: BLOCK_VERSION,
                 },
+            ));
+        }
+
+        // check timestamp
+        if header.time <= self.get_median_time_past(&tip) {
+            return Err(Error::BlockValidationError(
+                BlockValidationErrorCause::BlockTimeTooOld,
+            ));
+        }
+        if header.time > (get_adjusted_time() + MAX_FUTURE_BLOCK_TIME) as u32 {
+            return Err(Error::BlockValidationError(
+                BlockValidationErrorCause::BlockTimeTooNew,
             ));
         }
 
@@ -250,11 +267,12 @@ pub trait ChainStore {
 mod tests {
     use super::*;
     use crate::chain::store::OnMemoryChainStore;
-    use crate::test_helper::{get_chain, get_test_block_hash, get_test_headers, get_test_chain};
+    use crate::network::time::{now, set_mock_time};
+    use crate::test_helper::{get_chain, get_test_block_hash, get_test_chain, get_test_headers};
     use std::time::{SystemTime, UNIX_EPOCH};
+    use tapyrus::blockdata::block::Signature;
     use tapyrus::consensus::serialize;
     use tapyrus::Script;
-    use tapyrus::blockdata::block::Signature;
 
     #[test]
     fn test_get_median_time_past() {
@@ -262,14 +280,18 @@ mod tests {
         let mut time = chain.genesis().header.time;
 
         for height in 1..11 {
-            chain.connect_block_header(BlockHeader {
-                version: 1,
-                prev_blockhash: chain.get(height - 1).unwrap().header.bitcoin_hash(),
-                merkle_root: Default::default(),
-                im_merkle_root: Default::default(),
-                time: time + 1,
-                proof: Signature { signature: Script::new() },
-            }).unwrap();
+            chain
+                .connect_block_header(BlockHeader {
+                    version: 1,
+                    prev_blockhash: chain.get(height - 1).unwrap().header.bitcoin_hash(),
+                    merkle_root: Default::default(),
+                    im_merkle_root: Default::default(),
+                    time: time + 1,
+                    proof: Signature {
+                        signature: Script::new(),
+                    },
+                })
+                .unwrap();
 
             time += 1;
         }
@@ -327,6 +349,35 @@ mod tests {
         let mut header = get_test_headers(11, 1).pop().unwrap();
         header.version = 2;
         assert!(chain.connect_block_header(header).is_err());
+    }
+
+    #[test]
+    fn test_check_connect_to_tip_fail_when_passed_wrong_time_block() {
+        let chain = get_test_chain(10);
+        let mut header = get_test_headers(11, 1).pop().unwrap();
+
+        let now = chain.tip().header.time;
+        set_mock_time(now as u64);
+
+        // over max future
+        header.time = now + MAX_FUTURE_BLOCK_TIME as u32 + 1;
+        assert!(chain.check_connect_to_tip(&header).is_err());
+
+        // 1 sec before from max future
+        header.time = now + MAX_FUTURE_BLOCK_TIME as u32 - 1;
+        assert!(chain.check_connect_to_tip(&header).is_ok());
+
+        // 1 sec before from median time past
+        header.time = chain.get_median_time_past(&chain.tip()) - 1;
+        assert!(chain.check_connect_to_tip(&header).is_err());
+
+        // same with median time past
+        header.time = chain.get_median_time_past(&chain.tip());
+        assert!(chain.check_connect_to_tip(&header).is_err());
+
+        // 1 sec after from median time past
+        header.time = chain.get_median_time_past(&chain.tip()) + 1;
+        assert!(chain.check_connect_to_tip(&header).is_ok());
     }
 
     #[test]
