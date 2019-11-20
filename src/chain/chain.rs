@@ -109,6 +109,12 @@ impl<'a, T: ChainStore> Chain<T> {
             ));
         }
 
+        // todo: check proof
+        // get current aggregated public key from latest federation block and verify the proof
+        // using the pubkey.
+        // After federation management implemented in Tapyrus Core, it is needed to search current
+        // aggregated public key in chain. So, checking proof logic should be in here.
+
         // check prev_blockhash
         if tip.header.bitcoin_hash() != header.prev_blockhash {
             return Err(Error::BlockValidationError(
