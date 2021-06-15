@@ -162,7 +162,7 @@ mod tests {
     #[test]
     fn encode_test() {
         let msg = RawNetworkMessage {
-            magic: Network::Regtest.magic(),
+            magic: Network::Dev.magic(),
             payload: NetworkMessage::Version(version_message()),
         };
 

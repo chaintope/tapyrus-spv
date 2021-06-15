@@ -36,10 +36,9 @@ pub extern "C" fn tapyrus_spv_run(
         .expect("wrong string passed as network.");
 
     let network = match network {
-        "bitcoin" => Network::Bitcoin,
-        "testnet" => Network::Testnet,
-        "regtest" => Network::Regtest,
-        _ => panic!("network should be \"bitcoin\" or \"testnet\" or \"regtest\""),
+        "prod" => Network::Prod,
+        "dev" => Network::Dev,
+        _ => panic!("network should be \"prod\" or \"dev\""),
     };
 
     let genesis_hex = unsafe { CStr::from_ptr(genesis_hex) }

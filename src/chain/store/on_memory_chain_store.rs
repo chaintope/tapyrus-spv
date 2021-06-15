@@ -68,7 +68,7 @@ mod tests {
     #[test]
     fn test_store() {
         let mut store = OnMemoryChainStore::new();
-        store.initialize(genesis_block(Network::Regtest));
+        store.initialize(genesis_block(Network::Dev));
 
         assert!(store.get(0).is_some());
         assert_eq!(store.height(), 0);

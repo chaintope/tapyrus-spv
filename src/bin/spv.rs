@@ -25,7 +25,7 @@ fn main() {
         remote: "127.0.0.1:12383".to_string(),
         datadir: "/tmp/tapyrus-spv".to_string(),
         chain_params: ChainParams {
-            network: Network::Regtest,
+            network: Network::Dev,
             genesis: deserialize(&hex::decode(GENESIS_FOR_TEST).unwrap()).unwrap(),
         },
     };
