@@ -4,7 +4,6 @@
 
 use crate::chain::{Chain, ChainStore};
 use crate::network::{utils::codec::NetworkMessagesCodec, Error};
-use bitcoin_hashes::sha256d;
 use rand::{thread_rng, RngCore};
 use std::{
     borrow::BorrowMut,
@@ -19,6 +18,8 @@ use tapyrus::network::{
     message_network::VersionMessage,
 };
 use tokio::{codec::Framed, net::TcpStream, prelude::*};
+use tapyrus::BlockHash;
+use tapyrus::network::constants::ServiceFlags;
 
 pub type PeerID = u64;
 
@@ -69,7 +70,7 @@ where
     /// Send getheaders message to peer.
     pub fn send_getheaders<S: ChainStore>(&mut self, chain: &Chain<S>) {
         let locators = chain.get_locator();
-        let stop_hash = sha256d::Hash::default();
+        let stop_hash = BlockHash::default();
         let getheaders = GetHeadersMessage::new(locators, stop_hash);
         self.start_send(NetworkMessage::GetHeaders(getheaders));
     }
@@ -124,7 +125,7 @@ pub fn version_message() -> VersionMessage {
         .unwrap()
         .as_secs() as i64;
 
-    let services = 0;
+    let services = ServiceFlags::NONE;
 
     // generate random value
     let nonce = thread_rng().borrow_mut().next_u64();
@@ -138,7 +139,7 @@ pub fn version_message() -> VersionMessage {
     VersionMessage::new(
         services,
         timestamp,
-        Address::new(&blank_addr, 0),
+        Address::new(&blank_addr, services),
         Address::new(&blank_addr, services),
         nonce,
         format!("/tapyrus-spv:{}/", VERSION),

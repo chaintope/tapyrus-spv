@@ -3,8 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 use crate::chain::{BlockIndex, ChainStore};
-use bitcoin_hashes::sha256d;
-use tapyrus::{BitcoinHash, Block};
+use tapyrus::{Block, BlockHash};
 
 pub struct OnMemoryChainStore {
     headers: Vec<BlockIndex>,
@@ -16,7 +15,7 @@ impl ChainStore for OnMemoryChainStore {
             let genesis = BlockIndex {
                 header: genesis.header,
                 height: 0,
-                next_blockhash: sha256d::Hash::default(),
+                next_blockhash: BlockHash::default(),
             };
 
             self.headers = vec![genesis];
@@ -36,7 +35,7 @@ impl ChainStore for OnMemoryChainStore {
 
     fn update_tip(&mut self, index: &BlockIndex) {
         let mut tip = self.tip_mut();
-        tip.next_blockhash = index.header.bitcoin_hash();
+        tip.next_blockhash = index.header.block_hash();
 
         self.headers.push(index.clone());
     }

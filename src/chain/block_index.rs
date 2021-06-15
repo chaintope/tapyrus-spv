@@ -2,9 +2,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-use bitcoin_hashes::sha256d;
 use tapyrus::consensus::{Decodable, Encodable};
-use tapyrus::BlockHeader;
+use tapyrus::{BlockHeader, BlockHash};
 
 /// This struct is a index of block header. It has not only block header but also meta data like
 /// 'height', 'next_blockhash' for that.
@@ -12,7 +11,7 @@ use tapyrus::BlockHeader;
 pub struct BlockIndex {
     pub header: BlockHeader,
     pub height: i32,
-    pub next_blockhash: sha256d::Hash,
+    pub next_blockhash: BlockHash,
 }
 
 impl Encodable for BlockIndex {
