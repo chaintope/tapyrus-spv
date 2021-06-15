@@ -641,9 +641,9 @@ dependencies = [
 
 [[package]]
 name = "tapyrus"
-version = "0.4.5"
+version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b4667409499256929d68058221c7ec635d2b458da30fae60a726f261635c382"
+checksum = "c444c9e32106922a74b85fb2db820097d562f7f24ed89e82035a33841556f159"
 dependencies = [
  "bitcoin_hashes 0.8.0",
  "rug",

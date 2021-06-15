@@ -14,7 +14,7 @@ path = "src/lib.rs"
 crate-type=["lib", "cdylib", "staticlib"]
 
 [dependencies]
-tapyrus = "0.4.5"
+tapyrus = "0.4.6"
 bitcoin_hashes = "0.9.6"
 log="0.4"
 env_logger = "0.7.1"
