@@ -164,7 +164,7 @@ mod tests {
     fn test_connect_block_header_set_next_blockhash() {
         let mut chain = build_chain(0);
         let header = get_test_headers(1, 1).pop().unwrap();
-        let hash = header.bitcoin_hash();
+        let hash = header.block_hash();
 
         let _ = chain.connect_block_header(header);
         assert_eq!(chain.get(0).unwrap().next_blockhash, hash);
@@ -178,10 +178,10 @@ mod tests {
 
         // when chain size is 10
         let chain = build_chain(9);
-        let expected: Vec<sha256d::Hash> = get_test_headers(0, 10)
+        let expected: Vec<BlockHash> = get_test_headers(0, 10)
             .into_iter()
             .rev()
-            .map(|v| v.bitcoin_hash())
+            .map(|v| v.block_hash())
             .collect();
         assert_eq!(chain.get_locator(), expected);
 

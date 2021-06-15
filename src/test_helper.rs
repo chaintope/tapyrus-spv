@@ -5,10 +5,9 @@
 use crate::chain::store::OnMemoryChainStore;
 use crate::chain::{BlockIndex, Chain, ChainStore};
 use crate::network::Error;
-use bitcoin_hashes::sha256d;
 use hex::decode as hex_decode;
 use tapyrus::consensus::deserialize;
-use tapyrus::{BitcoinHash, Block, BlockHeader};
+use tapyrus::{Block, BlockHeader, BlockHash};
 use tokio::prelude::*;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
@@ -137,8 +136,8 @@ pub fn get_test_genesis_block() -> Block {
     deserialize(&bytes).unwrap()
 }
 
-pub fn get_test_block_hash(height: usize) -> sha256d::Hash {
-    get_test_headers(height, 1).first().unwrap().bitcoin_hash()
+pub fn get_test_block_hash(height: usize) -> BlockHash {
+    get_test_headers(height, 1).first().unwrap().block_hash()
 }
 
 pub fn get_test_block_index(height: i32) -> BlockIndex {
