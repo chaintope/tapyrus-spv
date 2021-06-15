@@ -85,8 +85,8 @@ mod tests {
     use super::*;
     use crate::network::peer::version_message;
     use bytes::BufMut;
-    use tapyrus::network::constants::Network;
     use tapyrus::network::message::NetworkMessage;
+    use tapyrus::network::constants::NetworkId;
 
     #[test]
     fn decode_test() {
@@ -162,7 +162,7 @@ mod tests {
     #[test]
     fn encode_test() {
         let msg = RawNetworkMessage {
-            magic: Network::Dev.magic(),
+            magic: NetworkId::from(1905960821).magic(),
             payload: NetworkMessage::Version(version_message()),
         };
 
