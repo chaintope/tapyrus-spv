@@ -5,7 +5,7 @@
 use crate::chain::{BlockIndex, Error};
 use core::cmp;
 use hex;
-use tapyrus::{Block, BlockHeader, BlockHash};
+use tapyrus::{Block, BlockHash, BlockHeader};
 
 /// This struct presents the way to use single chain.
 #[derive(Debug)]

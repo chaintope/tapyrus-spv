@@ -13,13 +13,12 @@ use std::{
 use tapyrus::network::message_blockdata::GetHeadersMessage;
 use tapyrus::network::{
     address::Address,
-    constants::Network,
+    constants::ServiceFlags,
     message::{NetworkMessage, RawNetworkMessage},
     message_network::VersionMessage,
 };
-use tokio::{codec::Framed, net::TcpStream, prelude::*};
 use tapyrus::BlockHash;
-use tapyrus::network::constants::ServiceFlags;
+use tokio::{codec::Framed, net::TcpStream, prelude::*};
 
 pub type PeerID = u64;
 
@@ -29,7 +28,7 @@ where
 {
     pub id: PeerID,
     pub addr: SocketAddr,
-    pub network: Network,
+    pub magic: u32,
     pub stream: T,
     pub version: Option<VersionMessage>,
 }
@@ -38,11 +37,11 @@ impl<T> Peer<T>
 where
     T: Sink<SinkItem = RawNetworkMessage> + Stream<Item = RawNetworkMessage>,
 {
-    pub fn new(id: u64, stream: T, addr: SocketAddr, network: Network) -> Peer<T> {
+    pub fn new(id: u64, stream: T, addr: SocketAddr, magic: u32) -> Peer<T> {
         Peer {
             id,
             addr,
-            network,
+            magic,
             stream,
             version: None,
         }
@@ -55,7 +54,7 @@ where
         trace!("Sending message: {:?}", message);
 
         let raw_msg = RawNetworkMessage {
-            magic: self.network.magic(),
+            magic: self.magic,
             payload: message,
         };
 
@@ -87,7 +86,7 @@ where
     fn poll(&mut self) -> Result<Async<Option<Self::Item>>, Self::Error> {
         match self.stream.poll()? {
             Async::Ready(Some(message)) => {
-                if message.magic != self.network.magic() {
+                if message.magic != self.magic {
                     info!("Wrong magic bytes.");
                     return Err(Error::WrongMagicBytes);
                 }
@@ -103,7 +102,7 @@ where
 
 pub fn connect(
     address: &SocketAddr,
-    network: Network,
+    magic: u32,
 ) -> impl Future<Item = Peer<Framed<TcpStream, NetworkMessagesCodec>>, Error = Error> {
     trace!("Try to create TCP connection to {}", address);
     TcpStream::connect(address)
@@ -111,7 +110,7 @@ pub fn connect(
             let addr = stream.peer_addr().unwrap();
             trace!("Success to create TCP connection to {}", addr);
             let stream = Framed::new(stream, NetworkMessagesCodec::new());
-            Peer::new(0, stream, addr, network)
+            Peer::new(0, stream, addr, magic)
         })
         .map_err(|e| Error::from(e))
 }

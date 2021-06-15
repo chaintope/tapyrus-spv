@@ -3,7 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 use tapyrus::consensus::{Decodable, Encodable};
-use tapyrus::{BlockHeader, BlockHash};
+use tapyrus::{BlockHash, BlockHeader};
 
 /// This struct is a index of block header. It has not only block header but also meta data like
 /// 'height', 'next_blockhash' for that.

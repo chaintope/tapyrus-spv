@@ -26,7 +26,7 @@ use crate::chain::{Chain, ChainStore};
 use crate::network::{connect, BlockHeaderDownload, Handshake};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
-use tapyrus::network::constants::Network;
+use tapyrus::network::constants::{Network, NetworkId};
 use tapyrus::Block;
 use tokio::prelude::Future;
 
@@ -76,7 +76,8 @@ impl SPV {
             "Connect to remote peer {}. Network is {}.",
             remote_socket_addr, self.options.chain_params.network
         );
-        let connection = connect(&remote_socket_addr, self.options.chain_params.network)
+        let magic = self.options.chain_params.network_id.clone().magic();
+        let connection = connect(&remote_socket_addr, magic)
             .and_then(|peer| Handshake::new(peer))
             .and_then(move |peer| {
                 BlockHeaderDownload::new(peer, chain_state_for_block_header_download)
@@ -133,4 +134,6 @@ pub struct ChainParams {
     pub network: Network,
     /// Genesis block for network to be connected
     pub genesis: Block,
+    /// Network ID
+    pub network_id: NetworkId,
 }
