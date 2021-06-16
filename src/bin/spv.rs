@@ -27,7 +27,7 @@ fn main() {
         chain_params: ChainParams {
             network: Network::Dev,
             genesis: deserialize(&hex::decode(GENESIS_FOR_TEST).unwrap()).unwrap(),
-            network_id: tapyrus::network::constants::NetworkId::from(1939510133),
+            network_id: tapyrus::network::constants::NetworkId::REGTEST,
         },
     };
 

@@ -136,7 +136,7 @@ mod tests {
     #[test]
     fn test_process_headers_fails_when_passed_over_max_headers_results() {
         let (_here, there) = channel::<RawNetworkMessage>();
-        let mut peer = Peer::new(0, there, "0.0.0.0:0".parse().unwrap(), NetworkId::from(1905960821).magic());
+        let mut peer = Peer::new(0, there, "0.0.0.0:0".parse().unwrap(), NetworkId::REGTEST.magic());
 
         let mut chain_state = ChainState::new(get_chain());
         let mut chain_active = chain_state.borrow_mut_chain_active();
@@ -192,7 +192,7 @@ mod tests {
                 }
 
                 let headers_message = RawNetworkMessage {
-                    magic: NetworkId::from(1905960821).magic(),
+                    magic: NetworkId::REGTEST.magic(),
                     payload: NetworkMessage::Headers(get_test_headers(1, 10)),
                 };
 
@@ -229,7 +229,7 @@ mod tests {
                 }
 
                 let headers_message = RawNetworkMessage {
-                    magic: NetworkId::from(1905960821).magic(),
+                    magic: NetworkId::REGTEST.magic(),
                     payload: NetworkMessage::Headers(get_test_headers(10, 10)),
                 };
 
@@ -256,7 +256,7 @@ mod tests {
                 }
 
                 let headers_message = RawNetworkMessage {
-                    magic: NetworkId::from(1905960821).magic(),
+                    magic: NetworkId::REGTEST.magic(),
                     payload: NetworkMessage::Headers(get_test_headers(20, 3)),
                 };
 
@@ -270,7 +270,7 @@ mod tests {
     #[test]
     fn test_block_header_download() {
         let (here, there) = channel::<RawNetworkMessage>();
-        let peer = Peer::new(0, there, "0.0.0.0:0".parse().unwrap(), NetworkId::from(1905960821).magic());
+        let peer = Peer::new(0, there, "0.0.0.0:0".parse().unwrap(), NetworkId::REGTEST.magic());
 
         let chain_state = Arc::new(Mutex::new(ChainState::new(get_chain())));
         let chain_state_for_block_header_download = chain_state.clone();

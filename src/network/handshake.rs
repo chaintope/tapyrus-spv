@@ -91,7 +91,7 @@ mod tests {
         let (here, there) = channel::<RawNetworkMessage>();
 
         let addr = "0.0.0.0:0".parse().unwrap();
-        let peer = Peer::new(0, there, addr, NetworkId::from(1905960821).magic());
+        let peer = Peer::new(0, there, addr, NetworkId::REGTEST.magic());
 
         let future = tokio::prelude::future::lazy(move || {
             let handshake = Handshake::new(peer).map(|_| {}).map_err(|_| {});
@@ -114,7 +114,7 @@ mod tests {
 
                     // send version message.
                     let version = RawNetworkMessage {
-                        magic: NetworkId::from(1905960821).magic(),
+                        magic: NetworkId::REGTEST.magic(),
                         payload: NetworkMessage::Version(version_message()),
                     };
 
@@ -122,7 +122,7 @@ mod tests {
 
                     // send verack message.
                     let verack = RawNetworkMessage {
-                        magic: NetworkId::from(1905960821).magic(),
+                        magic: NetworkId::REGTEST.magic(),
                         payload: NetworkMessage::Verack,
                     };
                     let _ = here.start_send(verack);
