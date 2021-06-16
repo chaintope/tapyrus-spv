@@ -85,8 +85,8 @@ mod tests {
     use super::*;
     use crate::network::peer::version_message;
     use bytes::BufMut;
-    use tapyrus::network::message::NetworkMessage;
     use tapyrus::network::constants::NetworkId;
+    use tapyrus::network::message::NetworkMessage;
 
     #[test]
     fn decode_test() {

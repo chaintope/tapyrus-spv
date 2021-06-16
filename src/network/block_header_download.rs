@@ -129,14 +129,19 @@ mod tests {
     use crate::test_helper::{
         channel, get_chain, get_test_genesis_block, get_test_headers, TwoWayChannel,
     };
-    use tapyrus::network::message_blockdata::GetHeadersMessage;
-    use tapyrus::{BlockHash};
     use tapyrus::network::constants::NetworkId;
+    use tapyrus::network::message_blockdata::GetHeadersMessage;
+    use tapyrus::BlockHash;
 
     #[test]
     fn test_process_headers_fails_when_passed_over_max_headers_results() {
         let (_here, there) = channel::<RawNetworkMessage>();
-        let mut peer = Peer::new(0, there, "0.0.0.0:0".parse().unwrap(), NetworkId::REGTEST.magic());
+        let mut peer = Peer::new(
+            0,
+            there,
+            "0.0.0.0:0".parse().unwrap(),
+            NetworkId::REGTEST.magic(),
+        );
 
         let mut chain_state = ChainState::new(get_chain());
         let mut chain_active = chain_state.borrow_mut_chain_active();
@@ -270,7 +275,12 @@ mod tests {
     #[test]
     fn test_block_header_download() {
         let (here, there) = channel::<RawNetworkMessage>();
-        let peer = Peer::new(0, there, "0.0.0.0:0".parse().unwrap(), NetworkId::REGTEST.magic());
+        let peer = Peer::new(
+            0,
+            there,
+            "0.0.0.0:0".parse().unwrap(),
+            NetworkId::REGTEST.magic(),
+        );
 
         let chain_state = Arc::new(Mutex::new(ChainState::new(get_chain())));
         let chain_state_for_block_header_download = chain_state.clone();

@@ -7,7 +7,7 @@ use crate::chain::{BlockIndex, Chain, ChainStore};
 use crate::network::Error;
 use hex::decode as hex_decode;
 use tapyrus::consensus::deserialize;
-use tapyrus::{Block, BlockHeader, BlockHash};
+use tapyrus::{Block, BlockHash, BlockHeader};
 use tokio::prelude::*;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
