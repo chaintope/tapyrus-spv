@@ -2,9 +2,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-use bitcoin_hashes::sha256d;
 use tapyrus::consensus::{Decodable, Encodable};
-use tapyrus::BlockHeader;
+use tapyrus::{BlockHash, BlockHeader};
 
 /// This struct is a index of block header. It has not only block header but also meta data like
 /// 'height', 'next_blockhash' for that.
@@ -12,7 +11,7 @@ use tapyrus::BlockHeader;
 pub struct BlockIndex {
     pub header: BlockHeader,
     pub height: i32,
-    pub next_blockhash: sha256d::Hash,
+    pub next_blockhash: BlockHash,
 }
 
 impl Encodable for BlockIndex {
@@ -48,7 +47,7 @@ mod tests {
     use crate::test_helper::get_test_block_index;
     use tapyrus::consensus::{deserialize, serialize};
 
-    const SERIALIZED_GENESIS_BLOCK_INDEX: &str = "01000000000000000000000000000000000000000000000000000000000000000000000019225b47d8c3eefd0dab934ba4b633940d032a7f5a192a4ddece08f566f1cfb95d5022ed80bde51d7436cadcb10455a2e5523fea9e46dc9ee5dec0037387e1b137aaba5d40fd3748264662cd991ac70e8d9ae3e06a1ea8956d74b36aa6419ca428f9baf24dc4df95637dc524d6374ef59ef6d15aba25020de3c35da969b1329ec961488067000000000000000000000000000000000000000000000000000000000000000000000000";
+    const SERIALIZED_GENESIS_BLOCK_INDEX: &str = "010000000000000000000000000000000000000000000000000000000000000000000000623fd6e71aaec98e129d8b447ba7c6fe88cd27346cc556353d2d8232a2829f0a49b4a19f4dc3f0526dca905dcaff6a8e34537d04b450e0ac5568ce89a9373e301665c860012102260b9be70a87125fd0e2da368db857a2d8ee1cb85a3c8b81490f4f35f99b212a40f457d5dd7caae6bf89a50efd13cf4a9e3857760f747e107d1184263e1212ef98cda52410bd822e92c44b4a22a2f6116a0df2b130afe315af6a7289567b32c1ca000000000000000000000000000000000000000000000000000000000000000000000000";
 
     #[test]
     fn test_encode() {

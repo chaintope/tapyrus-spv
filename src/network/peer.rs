@@ -4,7 +4,6 @@
 
 use crate::chain::{Chain, ChainStore};
 use crate::network::{utils::codec::NetworkMessagesCodec, Error};
-use bitcoin_hashes::sha256d;
 use rand::{thread_rng, RngCore};
 use std::{
     borrow::BorrowMut,
@@ -14,10 +13,11 @@ use std::{
 use tapyrus::network::message_blockdata::GetHeadersMessage;
 use tapyrus::network::{
     address::Address,
-    constants::Network,
+    constants::ServiceFlags,
     message::{NetworkMessage, RawNetworkMessage},
     message_network::VersionMessage,
 };
+use tapyrus::BlockHash;
 use tokio::{codec::Framed, net::TcpStream, prelude::*};
 
 pub type PeerID = u64;
@@ -28,7 +28,7 @@ where
 {
     pub id: PeerID,
     pub addr: SocketAddr,
-    pub network: Network,
+    pub magic: u32,
     pub stream: T,
     pub version: Option<VersionMessage>,
 }
@@ -37,11 +37,11 @@ impl<T> Peer<T>
 where
     T: Sink<SinkItem = RawNetworkMessage> + Stream<Item = RawNetworkMessage>,
 {
-    pub fn new(id: u64, stream: T, addr: SocketAddr, network: Network) -> Peer<T> {
+    pub fn new(id: u64, stream: T, addr: SocketAddr, magic: u32) -> Peer<T> {
         Peer {
             id,
             addr,
-            network,
+            magic,
             stream,
             version: None,
         }
@@ -54,7 +54,7 @@ where
         trace!("Sending message: {:?}", message);
 
         let raw_msg = RawNetworkMessage {
-            magic: self.network.magic(),
+            magic: self.magic,
             payload: message,
         };
 
@@ -69,7 +69,7 @@ where
     /// Send getheaders message to peer.
     pub fn send_getheaders<S: ChainStore>(&mut self, chain: &Chain<S>) {
         let locators = chain.get_locator();
-        let stop_hash = sha256d::Hash::default();
+        let stop_hash = BlockHash::default();
         let getheaders = GetHeadersMessage::new(locators, stop_hash);
         self.start_send(NetworkMessage::GetHeaders(getheaders));
     }
@@ -86,7 +86,7 @@ where
     fn poll(&mut self) -> Result<Async<Option<Self::Item>>, Self::Error> {
         match self.stream.poll()? {
             Async::Ready(Some(message)) => {
-                if message.magic != self.network.magic() {
+                if message.magic != self.magic {
                     info!("Wrong magic bytes.");
                     return Err(Error::WrongMagicBytes);
                 }
@@ -102,7 +102,7 @@ where
 
 pub fn connect(
     address: &SocketAddr,
-    network: Network,
+    magic: u32,
 ) -> impl Future<Item = Peer<Framed<TcpStream, NetworkMessagesCodec>>, Error = Error> {
     trace!("Try to create TCP connection to {}", address);
     TcpStream::connect(address)
@@ -110,7 +110,7 @@ pub fn connect(
             let addr = stream.peer_addr().unwrap();
             trace!("Success to create TCP connection to {}", addr);
             let stream = Framed::new(stream, NetworkMessagesCodec::new());
-            Peer::new(0, stream, addr, network)
+            Peer::new(0, stream, addr, magic)
         })
         .map_err(|e| Error::from(e))
 }
@@ -124,7 +124,7 @@ pub fn version_message() -> VersionMessage {
         .unwrap()
         .as_secs() as i64;
 
-    let services = 0;
+    let services = ServiceFlags::NONE;
 
     // generate random value
     let nonce = thread_rng().borrow_mut().next_u64();
@@ -138,7 +138,7 @@ pub fn version_message() -> VersionMessage {
     VersionMessage::new(
         services,
         timestamp,
-        Address::new(&blank_addr, 0),
+        Address::new(&blank_addr, services),
         Address::new(&blank_addr, services),
         nonce,
         format!("/tapyrus-spv:{}/", VERSION),

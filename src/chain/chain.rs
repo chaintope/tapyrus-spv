@@ -3,10 +3,9 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 use crate::chain::{BlockIndex, Error};
-use bitcoin_hashes::{sha256d, Hash};
 use core::cmp;
 use hex;
-use tapyrus::{BitcoinHash, Block, BlockHeader};
+use tapyrus::{Block, BlockHash, BlockHeader};
 
 /// This struct presents the way to use single chain.
 #[derive(Debug)]
@@ -30,11 +29,11 @@ impl<T: ChainStore> Chain<T> {
         let block_index = BlockIndex {
             header,
             height: self.height() + 1,
-            next_blockhash: sha256d::Hash::default(),
+            next_blockhash: BlockHash::default(),
         };
 
         if log_enabled!(log::Level::Trace) {
-            let hash = hex::encode(block_index.header.bitcoin_hash().into_inner());
+            let hash = hex::encode(block_index.header.block_hash());
             trace!(
                 "Connect new block to tip. height: {}, hash: {}",
                 block_index.height,
@@ -64,14 +63,14 @@ impl<T: ChainStore> Chain<T> {
     }
 
     /// Return block hash list for indicate which blocks are include in block.
-    pub fn get_locator(&self) -> Vec<sha256d::Hash> {
+    pub fn get_locator(&self) -> Vec<BlockHash> {
         let mut step: i32 = 1;
-        let mut have = Vec::<sha256d::Hash>::with_capacity(32);
+        let mut have = Vec::<BlockHash>::with_capacity(32);
 
         let mut index = self.tip();
 
         loop {
-            have.push(index.header.bitcoin_hash());
+            have.push(index.header.block_hash());
 
             // Stop when we have added the genesis block.
             if index.height == 0 {
@@ -108,7 +107,7 @@ pub trait ChainStore {
             let genesis = BlockIndex {
                 header: genesis.header,
                 height: 0,
-                next_blockhash: sha256d::Hash::default(),
+                next_blockhash: BlockHash::default(),
             };
 
             self.update_tip(&genesis);
@@ -165,7 +164,7 @@ mod tests {
     fn test_connect_block_header_set_next_blockhash() {
         let mut chain = build_chain(0);
         let header = get_test_headers(1, 1).pop().unwrap();
-        let hash = header.bitcoin_hash();
+        let hash = header.block_hash();
 
         let _ = chain.connect_block_header(header);
         assert_eq!(chain.get(0).unwrap().next_blockhash, hash);
@@ -179,10 +178,10 @@ mod tests {
 
         // when chain size is 10
         let chain = build_chain(9);
-        let expected: Vec<sha256d::Hash> = get_test_headers(0, 10)
+        let expected: Vec<BlockHash> = get_test_headers(0, 10)
             .into_iter()
             .rev()
-            .map(|v| v.bitcoin_hash())
+            .map(|v| v.block_hash())
             .collect();
         assert_eq!(chain.get_locator(), expected);
 

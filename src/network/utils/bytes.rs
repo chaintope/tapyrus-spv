@@ -10,7 +10,7 @@ use std::io::{Error, Write};
 ///
 /// This struct is using in NetworkMessage encoding process in codec.rs. tokio's Encoder
 /// trait gets buffer as bytes::BytesMut, but this struct doesn't implement std::io::Write trait.
-/// And rust-bitcoin's encode function which is Encodable.consensus_encode() claims a buffer which
+/// And rust-tapyrus's encode function which is Encodable.consensus_encode() claims a buffer which
 /// is implementing std::io::Write trait.
 /// We need to use this struct for adapting these functionality.
 pub struct BytesMut<'a> {

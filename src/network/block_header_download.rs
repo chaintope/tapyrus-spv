@@ -129,14 +129,19 @@ mod tests {
     use crate::test_helper::{
         channel, get_chain, get_test_genesis_block, get_test_headers, TwoWayChannel,
     };
-    use bitcoin_hashes::sha256d;
+    use tapyrus::network::constants::NetworkId;
     use tapyrus::network::message_blockdata::GetHeadersMessage;
-    use tapyrus::{BitcoinHash, Network};
+    use tapyrus::BlockHash;
 
     #[test]
     fn test_process_headers_fails_when_passed_over_max_headers_results() {
         let (_here, there) = channel::<RawNetworkMessage>();
-        let mut peer = Peer::new(0, there, "0.0.0.0:0".parse().unwrap(), Network::Regtest);
+        let mut peer = Peer::new(
+            0,
+            there,
+            "0.0.0.0:0".parse().unwrap(),
+            NetworkId::REGTEST.magic(),
+        );
 
         let mut chain_state = ChainState::new(get_chain());
         let mut chain_active = chain_state.borrow_mut_chain_active();
@@ -182,9 +187,9 @@ mod tests {
                             // test BlockHeaderDownload future send collect message.
                             assert_eq!(
                                 locator_hashes,
-                                vec![get_test_genesis_block().header.bitcoin_hash()]
+                                vec![get_test_genesis_block().header.block_hash()]
                             );
-                            assert_eq!(stop_hash, sha256d::Hash::default());
+                            assert_eq!(stop_hash, BlockHash::default());
                         }
                     }
                 } else {
@@ -192,7 +197,7 @@ mod tests {
                 }
 
                 let headers_message = RawNetworkMessage {
-                    magic: Network::Regtest.magic(),
+                    magic: NetworkId::REGTEST.magic(),
                     payload: NetworkMessage::Headers(get_test_headers(1, 10)),
                 };
 
@@ -215,13 +220,13 @@ mod tests {
                             ..
                         } => {
                             // test BlockHeaderDownload future send collect message.
-                            let expected: Vec<sha256d::Hash> = get_test_headers(0, 11)
+                            let expected: Vec<BlockHash> = get_test_headers(0, 11)
                                 .into_iter()
                                 .rev()
-                                .map(|v| v.bitcoin_hash())
+                                .map(|v| v.block_hash())
                                 .collect();
                             assert_eq!(locator_hashes, expected);
-                            assert_eq!(stop_hash, sha256d::Hash::default());
+                            assert_eq!(stop_hash, BlockHash::default());
                         }
                     }
                 } else {
@@ -229,7 +234,7 @@ mod tests {
                 }
 
                 let headers_message = RawNetworkMessage {
-                    magic: Network::Regtest.magic(),
+                    magic: NetworkId::REGTEST.magic(),
                     payload: NetworkMessage::Headers(get_test_headers(10, 10)),
                 };
 
@@ -248,7 +253,7 @@ mod tests {
                     match getheaders_msg {
                         GetHeadersMessage { stop_hash, .. } => {
                             // test BlockHeaderDownload future send collect message.
-                            assert_eq!(stop_hash, sha256d::Hash::default());
+                            assert_eq!(stop_hash, BlockHash::default());
                         }
                     }
                 } else {
@@ -256,7 +261,7 @@ mod tests {
                 }
 
                 let headers_message = RawNetworkMessage {
-                    magic: Network::Regtest.magic(),
+                    magic: NetworkId::REGTEST.magic(),
                     payload: NetworkMessage::Headers(get_test_headers(20, 3)),
                 };
 
@@ -270,7 +275,12 @@ mod tests {
     #[test]
     fn test_block_header_download() {
         let (here, there) = channel::<RawNetworkMessage>();
-        let peer = Peer::new(0, there, "0.0.0.0:0".parse().unwrap(), Network::Regtest);
+        let peer = Peer::new(
+            0,
+            there,
+            "0.0.0.0:0".parse().unwrap(),
+            NetworkId::REGTEST.magic(),
+        );
 
         let chain_state = Arc::new(Mutex::new(ChainState::new(get_chain())));
         let chain_state_for_block_header_download = chain_state.clone();
